@@ -77,13 +77,13 @@
       margin-top: 4px;
     }
 
-    /* File System & Backup Controls Bar */
+    /* File System & Backup Controls Bar (Positioned at Bottom) */
     .file-system-bar {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 12px 16px;
-      margin-bottom: 20px;
+      margin-top: 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -519,6 +519,62 @@
       font-weight: bold;
     }
 
+    .clickable-stamp-img {
+      max-width: 120px;
+      max-height: 120px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .clickable-stamp-img:hover {
+      transform: scale(1.04);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    /* Modal / Lightbox for viewing full-size images */
+    .image-modal {
+      display: none;
+      position: fixed;
+      z-index: 10000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .image-modal-content {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      object-fit: contain;
+    }
+
+    .image-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: #ffffff;
+      font-size: 36px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.2s;
+      user-select: none;
+    }
+
+    .image-modal-close:hover {
+      color: #facc15;
+    }
+
     .card-actions {
       display: flex;
       gap: 8px;
@@ -559,24 +615,6 @@
       <h1>日本駅 TRACKER & ROUTE LOG</h1>
       <div class="subtitle">Log Single Stations or Start-to-End Journeys with Railway Lines & Individual Station Stamps</div>
     </header>
-
-    <!-- File System Access API & Universal Backup Control Bar -->
-    <div class="file-system-bar" id="fsBarContainer">
-      <div class="fs-buttons-group">
-        <!-- Desktop File System API Buttons (hidden automatically on mobile) -->
-        <div id="desktopFsButtons" style="display: none; gap: 8px;">
-          <button id="fs-save-btn" class="fs-btn">📁 Save to Local File</button>
-          <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
-        </div>
-
-        <!-- Export & Import Backup Buttons with Prompt Location -->
-        <button onclick="exportDataJSON()" class="fs-btn">⬇️ Export Backup (.json)</button>
-        <label class="fs-btn" style="cursor: pointer; margin: 0;">
-          ⬆️ Import Backup <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
-        </label>
-      </div>
-      <span id="file-status">Initializing storage...</span>
-    </div>
 
     <!-- Mode Selector Tabs -->
     <div class="mode-tabs">
@@ -668,7 +706,7 @@
       </div>
     </div>
 
-    <!-- Interactive Leaflet Map (Moved to Bottom) -->
+    <!-- Interactive Leaflet Map -->
     <div class="map-card">
       <div class="map-header">
         <h2>Route & Station Map</h2>
@@ -679,6 +717,29 @@
       </div>
       <div id="map"></div>
     </div>
+
+    <!-- File System Access API & Universal Backup Control Bar -->
+    <div class="file-system-bar" id="fsBarContainer">
+      <div class="fs-buttons-group">
+        <div id="desktopFsButtons" style="display: none; gap: 8px;">
+          <button id="fs-save-btn" class="fs-btn">📁 Save to Local File</button>
+          <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
+        </div>
+
+        <button onclick="exportDataJSON()" class="fs-btn">⬇️ Export Backup (.json)</button>
+        <label class="fs-btn" style="cursor: pointer; margin: 0;">
+          ⬆️ Import Backup <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
+        </label>
+      </div>
+      <span id="file-status">Initializing storage...</span>
+    </div>
+
+  </div>
+
+  <!-- Full Image Viewer Lightbox Modal -->
+  <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
+    <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+    <img class="image-modal-content" id="modalImg" alt="Full Size Station Stamp">
   </div>
 
   <!-- Leaflet JS -->
@@ -978,6 +1039,20 @@
     const endStampLabel = document.getElementById('endStampLabel');
     const endStampPhotoInput = document.getElementById('endStampPhotoInput');
 
+    // Lightbox / Image Viewer Functions
+    function openImageModal(imgSrc) {
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImg');
+      modalImg.src = imgSrc;
+      modal.style.display = 'flex';
+    }
+
+    function closeImageModal(event) {
+      if (!event || event.target.id === 'imageModal' || event.target.classList.contains('image-modal-close')) {
+        document.getElementById('imageModal').style.display = 'none';
+      }
+    }
+
     // File System Access API & Universal Backup Integration Functions
     async function saveToFileSystem() {
       try {
@@ -1037,11 +1112,10 @@
       }
     }
 
-    // Export Backup with Save Location Prompt
+    // Export Backup
     async function exportDataJSON() {
       const dataStr = JSON.stringify(entries, null, 2);
 
-      // 1. Try to open the Native "Save As" file picker if supported by the browser
       if ('showSaveFilePicker' in window) {
         try {
           const handle = await window.showSaveFilePicker({
@@ -1057,12 +1131,11 @@
           document.getElementById('file-status').textContent = `Backup saved as: ${handle.name}`;
           return;
         } catch (err) {
-          if (err.name === 'AbortError') return; // User canceled the picker dialog
+          if (err.name === 'AbortError') return;
           console.warn('File System Picker failed/unsupported, using standard download fallback:', err);
         }
       }
 
-      // 2. Fallback for browsers/mobile devices without showSaveFilePicker
       const blob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const downloadAnchor = document.createElement('a');
@@ -1075,7 +1148,7 @@
       document.getElementById('file-status').textContent = "Backup exported to Downloads!";
     }
 
-    // Universal Import Backup (Works on Mobile & Desktop)
+    // Import Backup
     function importDataJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1722,7 +1795,7 @@
               </label>
               <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'start', event)" title="Upload/Change Stamp Photo">
             </div>
-            ${depPhoto ? `<div style="margin-top: 4px;"><img src="${depPhoto}" alt="Station Stamp" style="max-width: 120px; max-height: 120px; border-radius: 4px; border: 1px solid var(--border-color); object-fit: cover;"></div>` : ''}
+            ${depPhoto ? `<div style="margin-top: 4px;"><img src="${depPhoto}" alt="Station Stamp" class="clickable-stamp-img" onclick="openImageModal(this.src)" title="Click to view full size"></div>` : ''}
 
             ${item.type === 'journey' ? `
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px;">
@@ -1732,7 +1805,7 @@
                 </label>
                 <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'end', event)" title="Upload/Change Arrival Stamp Photo">
               </div>
-              ${arrPhoto ? `<div style="margin-top: 4px;"><img src="${arrPhoto}" alt="Arrival Station Stamp" style="max-width: 120px; max-height: 120px; border-radius: 4px; border: 1px solid var(--border-color); object-fit: cover;"></div>` : ''}
+              ${arrPhoto ? `<div style="margin-top: 4px;"><img src="${arrPhoto}" alt="Arrival Station Stamp" class="clickable-stamp-img" onclick="openImageModal(this.src)" title="Click to view full size"></div>` : ''}
             ` : ''}
           </div>
         `;
