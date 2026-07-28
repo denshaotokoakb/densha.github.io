@@ -77,7 +77,7 @@
       margin-top: 4px;
     }
 
-    /* File System & Backup Controls Bar (Positioned at Bottom) */
+    /* File System & Backup Controls Bar */
     .file-system-bar {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -351,6 +351,7 @@
       border-radius: 4px;
       letter-spacing: 0.5px;
       border: 1px solid #334155;
+      display: inline-block;
     }
 
     /* Verification Box */
@@ -406,30 +407,88 @@
     .station-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
+    /* Collapsible Entry Card Styles */
     .card-item {
       border: 1px solid var(--border-color);
       border-left: 5px solid var(--jr-green);
       border-radius: 6px;
+      background: #ffffff;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .card-summary {
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      gap: 10px;
+      background: #ffffff;
+      transition: background 0.15s;
+    }
+
+    .card-summary:hover {
+      background: #f8fafc;
+    }
+
+    .card-summary-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .collapse-chevron {
+      font-size: 0.75rem;
+      color: #6b7280;
+      transition: transform 0.2s ease;
+      display: inline-block;
+      width: 14px;
+      text-align: center;
+    }
+
+    .card-item.expanded .collapse-chevron {
+      transform: rotate(90deg);
+    }
+
+    .card-summary-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--jr-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-summary-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+    }
+
+    .card-body {
+      display: none;
       padding: 12px;
+      border-top: 1px solid var(--border-color);
       background: #fafafa;
+    }
+
+    .card-item.expanded .card-body {
+      display: block;
     }
 
     .route-arrow {
       color: var(--accent-orange);
       font-weight: bold;
-      margin: 0 4px;
-    }
-
-    .station-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 6px;
-      flex-wrap: wrap;
-      gap: 6px;
+      margin: 0 2px;
     }
 
     .station-line-tag {
@@ -462,7 +521,7 @@
       background: #eff6ff;
     }
 
-    /* Stamp & Wishlist Collection UI */
+    /* Stamp & Wishlist UI Badges & Buttons */
     .stamp-container {
       margin-top: 10px;
       padding-top: 8px;
@@ -504,7 +563,7 @@
       color: var(--complete-text);
       background: var(--complete-bg);
       border: 1px solid var(--complete-border);
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
       cursor: pointer;
       user-select: none;
@@ -533,6 +592,49 @@
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: bold;
+      border: 1px solid #fed7aa;
+    }
+
+    .stamp-badge-missing {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      background: #f3f4f6;
+      color: #9ca3af;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+      border: 1px solid #e5e7eb;
+    }
+
+    .quick-btn {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--jr-dark);
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .quick-btn:hover {
+      background: #f1f5f9;
+    }
+
+    .quick-btn-complete {
+      background: var(--complete-bg);
+      color: var(--complete-text);
+      border-color: var(--complete-border);
+    }
+
+    .quick-btn-complete:hover {
+      background: #dcfce7;
     }
 
     .clickable-stamp-img {
@@ -762,7 +864,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const STORAGE_KEY = 'japan_route_tracker_v13';
+    const STORAGE_KEY = 'japan_route_tracker_v14';
 
     // Japanese Station Database
     const JAPAN_STATION_DB = {
@@ -1002,6 +1104,9 @@
     let debounceTimer = null;
     let fileHandle = null;
 
+    // Track expanded state for entries (IDs that are expanded)
+    let expandedCardIds = new Set();
+
     // Leaflet Pins
     const greenIcon = new L.Icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -1069,7 +1174,18 @@
       }
     }
 
-    // Function to Edit Station ID directly from the station tag line
+    // Toggle card collapse / expand state
+    function toggleCardExpand(event, id) {
+      if (event) event.stopPropagation();
+      if (expandedCardIds.has(id)) {
+        expandedCardIds.delete(id);
+      } else {
+        expandedCardIds.add(id);
+      }
+      render();
+    }
+
+    // Function to Edit Station ID directly
     function editStationId(id) {
       const entry = entries.find(e => e.id === id);
       if (!entry) return;
@@ -1079,10 +1195,10 @@
         const currentEndId = entry.endStationId || (entry.end ? entry.end.code : '') || '';
 
         const newStartId = prompt(`Edit Departure Station ID for ${entry.start?.name || 'Start'}:`, currentStartId);
-        if (newStartId === null) return; // User cancelled
+        if (newStartId === null) return;
 
         const newEndId = prompt(`Edit Arrival Station ID for ${entry.end?.name || 'End'}:`, currentEndId);
-        if (newEndId === null) return; // User cancelled
+        if (newEndId === null) return;
 
         const cleanStart = newStartId.trim();
         const cleanEnd = newEndId.trim();
@@ -1095,7 +1211,7 @@
       } else {
         const currentId = entry.startStationId || (entry.start ? entry.start.code : '') || '';
         const newId = prompt(`Edit Station ID for ${entry.start?.name || 'Station'}:`, currentId);
-        if (newId === null) return; // User cancelled
+        if (newId === null) return;
 
         const cleanId = newId.trim();
         entry.startStationId = cleanId;
@@ -1107,7 +1223,7 @@
       if (fileHandle) { saveToFileSystem(); }
     }
 
-    // File System Access API & Universal Backup Integration Functions
+    // File System Access API & Backup Functions
     async function saveToFileSystem() {
       try {
         if (!fileHandle) {
@@ -1166,7 +1282,6 @@
       }
     }
 
-    // Export Backup
     async function exportDataJSON() {
       const dataStr = JSON.stringify(entries, null, 2);
 
@@ -1202,7 +1317,6 @@
       document.getElementById('file-status').textContent = "Backup exported to Downloads!";
     }
 
-    // Import Backup
     function importDataJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1380,7 +1494,7 @@
 
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ' station Japan')}&addressdetails=1&extratags=1&limit=4`, {
-          headers: { 'User-Agent': 'JapanRouteTracker/13.0' }
+          headers: { 'User-Agent': 'JapanRouteTracker/14.0' }
         });
         const data = await res.json();
         data.forEach(item => {
@@ -1615,7 +1729,8 @@
       }
     }
 
-    function markWishlistAsVisited(id) {
+    function markWishlistAsVisited(id, event) {
+      if (event) event.stopPropagation();
       const entry = entries.find(e => e.id === id);
       if (!entry) return;
       entry.status = 'visited';
@@ -1704,7 +1819,8 @@
       }
     });
 
-    function toggleStationStamp(id, stationType) {
+    function toggleStationStamp(id, stationType, event) {
+      if (event) event.stopPropagation();
       const entry = entries.find(e => e.id === id);
       if (!entry) return;
 
@@ -1725,8 +1841,10 @@
       render();
     }
 
-    function deleteEntry(id) {
+    function deleteEntry(id, event) {
+      if (event) event.stopPropagation();
       entries = entries.filter(item => item.id !== id);
+      expandedCardIds.delete(id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       render();
       if (fileHandle) {
@@ -1740,7 +1858,7 @@
       const bounds = [];
 
       entries.forEach(entry => {
-        if (entry.type === 'journey' && entry.start.lat && entry.end.lat) {
+        if (entry.type === 'journey' && entry.start && entry.end && entry.start.lat && entry.end.lat) {
           const startMarker = L.marker([entry.start.lat, entry.start.lng], { icon: greenIcon }).addTo(mapLayerGroup);
           startMarker.bindPopup(`<b>Start: ${entry.start.name} Station [${entry.startStationId || entry.start.code}]</b><br>Railway: ${entry.line}`);
           bounds.push([entry.start.lat, entry.start.lng]);
@@ -1795,30 +1913,32 @@
       updateMap();
     }
 
+    // Create Collapsible Card Item with Integrated Quick Controls
     function createCard(item) {
       const card = document.createElement('div');
-      card.className = 'card-item';
+      const isExpanded = expandedCardIds.has(item.id);
+      card.className = `card-item ${isExpanded ? 'expanded' : ''}`;
+      card.id = `card-${item.id}`;
 
-      let titleHtml = '';
+      let nameHtml = '';
+      let idBadgeHtml = '';
       let stationIdTagHtml = '';
 
       if (item.type === 'journey') {
-        let startCode = item.startStationId || item.start.code;
-        let endCode = item.endStationId || item.end.code;
-        titleHtml = `
-          <strong>${escapeHtml(item.start.name)}</strong> 
+        let startCode = item.startStationId || (item.start ? item.start.code : 'N/A');
+        let endCode = item.endStationId || (item.end ? item.end.code : 'N/A');
+        
+        nameHtml = `${escapeHtml(item.start.name)} <span class="route-arrow">➔</span> ${escapeHtml(item.end.name)}`;
+        idBadgeHtml = `
           <span class="station-number-badge">${escapeHtml(startCode)}</span>
           <span class="route-arrow">➔</span>
-          <strong>${escapeHtml(item.end.name)}</strong> 
           <span class="station-number-badge">${escapeHtml(endCode)}</span>
         `;
         stationIdTagHtml = `<span>Departure: ${escapeHtml(startCode)} | Arrival: ${escapeHtml(endCode)}</span>`;
       } else {
-        let stCode = item.startStationId || item.start.code;
-        titleHtml = `
-          <strong>${escapeHtml(item.start.name)} Station</strong> 
-          <span class="station-number-badge">${escapeHtml(stCode)}</span>
-        `;
+        let stCode = item.startStationId || (item.start ? item.start.code : 'N/A');
+        nameHtml = `${escapeHtml(item.start.name)} Station`;
+        idBadgeHtml = `<span class="station-number-badge">${escapeHtml(stCode)}</span>`;
         stationIdTagHtml = `<span>Station ID: ${escapeHtml(stCode)}</span>`;
       }
 
@@ -1828,23 +1948,77 @@
       const depPhoto = item.startStampPhoto || getStationPhotoFromHistory(item.start?.name);
       const arrPhoto = item.type === 'journey' ? (item.endStampPhoto || getStationPhotoFromHistory(item.end?.name)) : null;
 
-      let stampBadgesHtml = '';
+      // Stamp Status Summary Badges (When Collapsed)
+      let stampStatusBadgeHtml = '';
       if (item.status === 'visited') {
         if (item.type === 'journey') {
-          if (depStamped) stampBadgesHtml += `<span class="stamp-badge">Dep Stamp (${escapeHtml(item.start.name)})</span> `;
-          if (arrStamped) stampBadgesHtml += `<span class="stamp-badge">Arr Stamp (${escapeHtml(item.end.name)})</span>`;
-        } else if (depStamped) {
-          stampBadgesHtml += `<span class="stamp-badge">Stamp Collected</span>`;
+          stampStatusBadgeHtml = `
+            ${depStamped ? '<span class="stamp-badge"> Dep Stamp</span>' : '<span class="stamp-badge-missing">⚪ Dep</span>'}
+            ${arrStamped ? '<span class="stamp-badge"> Arr Stamp</span>' : '<span class="stamp-badge-missing">⚪ Arr</span>'}
+          `;
+        } else {
+          stampStatusBadgeHtml = depStamped 
+            ? `<span class="stamp-badge"> Stamp Collected</span>` 
+            : `<span class="stamp-badge-missing">⚪ No Stamp</span>`;
         }
+      } else {
+        stampStatusBadgeHtml = `<span class="stamp-badge-missing" style="color:#0284c7; background:#e0f2fe; border-color:#bae6fd;">⭐ Wishlist</span>`;
       }
 
-      let stampSectionHtml = '';
+      // Quick Controls directly integrated in layout header bar
+      let quickControlsHtml = '';
       if (item.status === 'visited') {
-        stampSectionHtml = `
+        if (item.type === 'journey') {
+          quickControlsHtml = `
+            <label class="quick-btn" title="Toggle Departure Stamp" onclick="event.stopPropagation()">
+              <input type="checkbox" ${depStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'start', event)" style="accent-color: var(--stamp-red);">
+              <span>Dep Stamp</span>
+            </label>
+            <label class="quick-btn" title="Toggle Arrival Stamp" onclick="event.stopPropagation()">
+              <input type="checkbox" ${arrStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'end', event)" style="accent-color: var(--stamp-red);">
+              <span>Arr Stamp</span>
+            </label>
+          `;
+        } else {
+          quickControlsHtml = `
+            <label class="quick-btn" title="Toggle Station Stamp" onclick="event.stopPropagation()">
+              <input type="checkbox" ${depStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'start', event)" style="accent-color: var(--stamp-red);">
+              <span>Stamp</span>
+            </label>
+          `;
+        }
+      } else {
+        quickControlsHtml = `
+          <button class="quick-btn quick-btn-complete" onclick="markWishlistAsVisited(${item.id}, event)" title="Mark as Completed">
+            ✓ Visited
+          </button>
+        `;
+      }
+
+      // Collapsible Summary Bar Header
+      const summaryBarHtml = `
+        <div class="card-summary" onclick="toggleCardExpand(event, ${item.id})">
+          <div class="card-summary-left">
+            <span class="collapse-chevron">▶</span>
+            <span class="card-summary-title">${nameHtml}</span>
+            ${idBadgeHtml}
+            ${stampStatusBadgeHtml}
+          </div>
+          <div class="card-summary-controls" onclick="event.stopPropagation()">
+            ${quickControlsHtml}
+            <button class="quick-btn" style="color: #dc2626;" onclick="deleteEntry(${item.id}, event)" title="Delete Entry">🗑️</button>
+          </div>
+        </div>
+      `;
+
+      // Detailed Body Section (Visible when expanded)
+      let stampDetailedSectionHtml = '';
+      if (item.status === 'visited') {
+        stampDetailedSectionHtml = `
           <div class="stamp-container">
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
               <label class="stamp-checkbox-label" style="margin:0;">
-                <input type="checkbox" ${depStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'start')">
+                <input type="checkbox" ${depStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'start', event)">
                 <span>${item.type === 'journey' ? 'Departure' : 'Station'} Stamp (${escapeHtml(item.start.name)})</span>
               </label>
               <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'start', event)" title="Upload/Change Stamp Photo">
@@ -1854,7 +2028,7 @@
             ${item.type === 'journey' ? `
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px;">
                 <label class="stamp-checkbox-label" style="margin:0;">
-                  <input type="checkbox" ${arrStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'end')">
+                  <input type="checkbox" ${arrStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'end', event)">
                   <span>Arrival Stamp (${escapeHtml(item.end.name)})</span>
                 </label>
                 <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'end', event)" title="Upload/Change Arrival Stamp Photo">
@@ -1863,39 +2037,38 @@
             ` : ''}
           </div>
         `;
-      } else if (item.status === 'wishlist') {
-        stampSectionHtml = `
+      } else {
+        stampDetailedSectionHtml = `
           <div class="stamp-container">
             <label class="wishlist-complete-label">
-              <input type="checkbox" onchange="markWishlistAsVisited(${item.id})">
+              <input type="checkbox" onchange="markWishlistAsVisited(${item.id}, event)">
               <span>Mark as Completed / Visited</span>
             </label>
           </div>
         `;
       }
 
-      card.innerHTML = `
-        <div class="station-header">
-          <div>${titleHtml}</div>
-          <div>${stampBadgesHtml}</div>
-        </div>
-        <div>
-          <span class="station-line-tag">
-            <span>${escapeHtml(item.line)}</span>
-            ${stationIdTagHtml}
-            <button class="btn-edit-id" onclick="editStationId(${item.id})" title="Edit Station ID">✏️ Edit ID</button>
-          </span>
-        </div>
-        ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:6px;">${escapeHtml(item.notes)}</div>` : ''}
-        
-        ${stampSectionHtml}
+      const bodyContentHtml = `
+        <div class="card-body">
+          <div>
+            <span class="station-line-tag">
+              <span>${escapeHtml(item.line)}</span>
+              ${stationIdTagHtml}
+              <button class="btn-edit-id" onclick="editStationId(${item.id})" title="Edit Station ID">✏️ Edit ID</button>
+            </span>
+          </div>
+          ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:8px;">${escapeHtml(item.notes)}</div>` : ''}
+          
+          ${stampDetailedSectionHtml}
 
-        <div style="font-size:0.78rem; color:#9ca3af; margin-top:8px;">Logged on: ${item.date}</div>
-        <div class="card-actions">
-          <button class="btn-action btn-delete" onclick="deleteEntry(${item.id})">Delete</button>
+          <div style="font-size:0.78rem; color:#9ca3af; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Logged on: ${item.date}</span>
+            <button class="btn-action btn-delete" onclick="deleteEntry(${item.id}, event)">Delete Entry</button>
+          </div>
         </div>
       `;
 
+      card.innerHTML = summaryBarHtml + bodyContentHtml;
       return card;
     }
 
