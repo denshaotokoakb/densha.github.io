@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Japan Train Station & Route Tracker | 日本駅</title>
+  
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --jr-green: #008000;
+      --jr-dark: #1f2937;
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --accent-orange: #e65100;
+      --border-color: #e5e7eb;
+      --code-bg: #1e293b;
+      --code-text: #facc15;
+      --stamp-red: #c2410c;
+      --stamp-bg: #fff7ed;
+      --stamp-border: #ffedd5;
+      --complete-bg: #f0fdf4;
+      --complete-border: #bbf7d0;
+      --complete-text: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--jr-dark);
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      background-color: var(--card-bg);
+      border: 4px solid var(--jr-green);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    header::before {
+      content: "";
+      display: block;
+      height: 8px;
+      background-color: var(--jr-green);
+      margin: -20px -20px 16px -20px;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--jr-dark);
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    /* File System Controls Bar */
+    .file-system-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .fs-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .fs-btn {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--jr-dark);
+      transition: all 0.2s;
+    }
+
+    .fs-btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    #file-status {
+      font-size: 0.85rem;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    /* Map Section */
+    .map-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .map-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .map-card h2 {
+      font-size: 1.2rem;
+      color: var(--jr-green);
+    }
+
+    .map-legend {
+      display: flex;
+      gap: 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .legend-green { background-color: #16a34a; }
+    .legend-blue { background-color: #2563eb; }
+
+    #map {
+      height: 380px;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      z-index: 1;
+    }
+
+    /* Mode Selector Tabs */
+    .mode-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 180px;
+      padding: 10px;
+      border: 2px solid var(--jr-green);
+      background: transparent;
+      color: var(--jr-green);
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--jr-green);
+      color: white;
+    }
+
+    /* Form Card */
+    .form-card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .form-card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: var(--jr-green);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .autocomplete-wrapper {
+      position: relative;
+    }
+
+    .autocomplete-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--jr-green);
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    .autocomplete-item {
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .autocomplete-item:hover {
+      background-color: #f0fdf4;
+    }
+
+    .autocomplete-title {
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: var(--jr-dark);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .autocomplete-sub {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+      grid-column: 1 / -1;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--jr-green);
+      border-color: transparent;
+    }
+
+    .custom-railway-box {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px dashed var(--border-color);
+    }
+
+    .form-checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--stamp-bg);
+      border: 1px solid var(--stamp-border);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--stamp-red);
+      cursor: pointer;
+    }
+
+    .form-checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--stamp-red);
+    }
+
+    button.btn-add {
+      background-color: var(--jr-green);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    button.btn-add:hover {
+      background-color: #006600;
+    }
+
+    /* Station Code Badge */
+    .station-number-badge {
+      background-color: var(--code-bg);
+      color: var(--code-text);
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+      border: 1px solid #334155;
+    }
+
+    /* Verification Box */
+    .verification-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+      color: #166534;
+      display: none;
+    }
+
+    /* Dashboard Layout */
+    .sections-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .sections-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-column {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge-count {
+      background: var(--bg-color);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    .station-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-item {
+      border: 1px solid var(--border-color);
+      border-left: 5px solid var(--jr-green);
+      border-radius: 6px;
+      padding: 12px;
+      background: #fafafa;
+    }
+
+    .route-arrow {
+      color: var(--accent-orange);
+      font-weight: bold;
+      margin: 0 4px;
+    }
+
+    .station-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .station-line-tag {
+      font-size: 0.82rem;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* Stamp & Wishlist Collection UI */
+    .stamp-container {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stamp-checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--stamp-red);
+      background: var(--stamp-bg);
+      border: 1px solid var(--stamp-border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      width: fit-content;
+    }
+
+    .stamp-checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--stamp-red);
+    }
+
+    .wishlist-complete-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--complete-text);
+      background: var(--complete-bg);
+      border: 1px solid var(--complete-border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      width: fit-content;
+      transition: background 0.2s;
+    }
+
+    .wishlist-complete-label:hover {
+      background: #dcfce7;
+    }
+
+    .wishlist-complete-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #16a34a;
+    }
+
+    .stamp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      background: #ffedd5;
+      color: #c2410c;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-action {
+      font-size: 0.78rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-delete {
+      background-color: #fee2e2;
+      color: #dc2626;
+      margin-left: auto;
+    }
+
+    .btn-delete:hover {
+      background-color: #fca5a5;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>日本駅 TRACKER & ROUTE LOG</h1>
+      <div class="subtitle">Log Single Stations or Start-to-End Journeys with Railway Lines & Individual Station Stamps</div>
+    </header>
+
+    <!-- File System Access API Control Bar -->
+    <div class="file-system-bar" id="fsBarContainer" style="display: none;">
+      <div class="fs-buttons">
+        <button id="fs-save-btn" class="fs-btn">📁 Save to Local File</button>
+        <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
+      </div>
+      <span id="file-status">Using Browser Storage (localStorage)</span>
+    </div>
+
+    <!-- Interactive Leaflet Map -->
+    <div class="map-card">
+      <div class="map-header">
+        <h2>Route & Station Map</h2>
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-dot legend-green"></span> Start / Single Station</div>
+          <div class="legend-item"><span class="legend-dot legend-blue"></span> End Station</div>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="mode-tabs">
+      <button class="tab-btn active" id="tabSingle" onclick="setMode('single')">Log Single Station</button>
+      <button class="tab-btn" id="tabJourney" onclick="setMode('journey')">Log Journey (Start ➔ End)</button>
+      <button class="tab-btn" id="tabWishlist" onclick="setMode('wishlist')">Wishlist Station</button>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card">
+      <h2 id="formHeading">+ Log Single Visited Station</h2>
+      
+      <div id="verificationBox" class="verification-box"></div>
+
+      <form id="trackerForm" autocomplete="off">
+        <div class="form-grid">
+          
+          <!-- Start / Departure Station Input -->
+          <div class="autocomplete-wrapper" id="startGroup">
+            <input type="text" id="startStationInput" placeholder="Station Name (e.g. Kyoto)..." required>
+            <div id="startResults" class="autocomplete-results"></div>
+          </div>
+
+          <!-- End / Arrival Station Input -->
+          <div class="autocomplete-wrapper" id="endGroup" style="display: none;">
+            <input type="text" id="endStationInput" placeholder="Arrival Station (e.g. Tokyo)...">
+            <div id="endResults" class="autocomplete-results"></div>
+          </div>
+
+          <!-- Railway Selection Dropdown -->
+          <div>
+            <select id="railwaySelect" onchange="handleRailwayDropdownChange()" required>
+              <option value="">-- Choose Railway Line & Station ID --</option>
+              <option value="custom">+ Enter Custom Railway & ID...</option>
+            </select>
+          </div>
+
+          <select id="statusInput" onchange="updateFormStampCheckboxes()">
+            <option value="visited">Completed Journey / Visited</option>
+            <option value="wishlist">Planned Journey / Wishlist</option>
+          </select>
+
+          <!-- Custom Railway Fallback Inputs -->
+          <div id="customRailwayBox" class="custom-railway-box" style="display: none;">
+            <input type="text" id="customLineInput" placeholder="Custom Railway Line Name (e.g., Keio Line)">
+            <input type="text" id="customIdInput" placeholder="Station ID (e.g., KO01)">
+          </div>
+        </div>
+
+        <!-- Form Stamp Checkboxes and Photo Uploads -->
+        <div id="formStampWrapper" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <div>
+            <label class="form-checkbox-row" id="startStampRow">
+              <input type="checkbox" id="startStampInput">
+              <span id="startStampLabel">Station Stamp Collected (駅スタンプ)</span>
+            </label>
+            <input type="file" id="startStampPhotoInput" accept="image/*" style="margin-top: 6px; font-size: 0.85rem;">
+          </div>
+          <div id="endStampWrapperContainer" style="display: none; flex-direction: column; gap: 6px;">
+            <label class="form-checkbox-row" id="endStampRow">
+              <input type="checkbox" id="endStampInput">
+              <span id="endStampLabel">Arrival Station Stamp Collected (駅スタンプ)</span>
+            </label>
+            <input type="file" id="endStampPhotoInput" accept="image/*" style="margin-top: 6px; font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <textarea id="notesInput" placeholder="Notes (e.g., Transfer tips, stamp locations, scenery)..."></textarea>
+        <button type="submit" id="btnSubmit" class="btn-add">Verify Route & Save Entry</button>
+      </form>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="sections-grid">
+      <div class="section-column">
+        <div class="section-title">
+          <span>Planned Journeys & Wishlist Stations</span>
+          <span class="badge-count" id="wishlistCount">0</span>
+        </div>
+        <div class="station-list" id="wishlistContainer"></div>
+      </div>
+
+      <div class="section-column">
+        <div class="section-title">
+          <span>Completed Journeys & Visited Stations</span>
+          <span class="badge-count" id="visitedCount">0</span>
+        </div>
+        <div class="station-list" id="visitedContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const STORAGE_KEY = 'japan_route_tracker_v13';
+
+    // Japanese Station Database[cite: 1]
+    const JAPAN_STATION_DB = {
+      "tokyo": {
+        kanji: "東京駅", lat: 35.6812, lng: 139.7671, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY01" },
+          { line: "JR Chuo Main Line", id: "JC01" },
+          { line: "JR Keiyo Line", id: "JE01" },
+          { line: "JR Tokaido Line", id: "JT01" },
+          { line: "Tokaido Shinkansen", id: "S00" },
+          { line: "Tokyo Metro Marunouchi Line", id: "M17" }
+        ]
+      },
+      "kanda": {
+        kanji: "神田駅", lat: 35.6917, lng: 139.7708, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY02" },
+          { line: "JR Chuo Main Line", id: "JC02" },
+          { line: "JR Keihin-Tohoku Line", id: "JK27" },
+          { line: "Tokyo Metro Ginza Line", id: "G13" }
+        ]
+      },
+      "akihabara": {
+        kanji: "秋葉原駅", lat: 35.6983, lng: 139.7731, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY13" },
+          { line: "JR Keihin-Tohoku Line", id: "JK28" },
+          { line: "JR Chuo-Sobu Line", id: "JB19" },
+          { line: "Tokyo Metro Hibiya Line", id: "H16" },
+          { line: "Tsukuba Express", id: "TX01" }
+        ]
+      },
+      "ueno": {
+        kanji: "上野駅", lat: 35.7138, lng: 139.7773, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY05" },
+          { line: "JR Keihin-Tohoku Line", id: "JK30" },
+          { line: "JR Joban Line", id: "JJ01" },
+          { line: "Tohoku Shinkansen", id: "S01" },
+          { line: "Tokyo Metro Ginza Line", id: "G16" },
+          { line: "Tokyo Metro Hibiya Line", id: "H18" }
+        ]
+      },
+      "ikebukuro": {
+        kanji: "池袋駅", lat: 35.7295, lng: 139.7109, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY13" },
+          { line: "JR Saikyo Line", id: "JS21" },
+          { line: "Tobu Tojo Line", id: "TJ01" },
+          { line: "Seibu Ikebukuro Line", id: "SI01" },
+          { line: "Tokyo Metro Marunouchi Line", id: "M25" },
+          { line: "Tokyo Metro Yurakucho Line", id: "Y09" },
+          { line: "Tokyo Metro Fukutoshin Line", id: "F09" }
+        ]
+      },
+      "shinjuku": {
+        kanji: "新宿駅", lat: 35.6896, lng: 139.7006, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY17" },
+          { line: "JR Chuo Line", id: "JC05" },
+          { line: "JR Saikyo Line", id: "JS20" },
+          { line: "Odakyu Odawara Line", id: "OH01" },
+          { line: "Keio Line", id: "KO01" },
+          { line: "Tokyo Metro Marunouchi Line", id: "M08" },
+          { line: "Toei Shinjuku Line", id: "S01" },
+          { line: "Toei Oedo Line", id: "E27" }
+        ]
+      },
+      "harajuku": {
+        kanji: "原宿駅", lat: 35.6702, lng: 139.7027, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY19" },
+          { line: "Tokyo Metro Chiyoda Line (Meiji-jingumae)", id: "C03" }
+        ]
+      },
+      "shibuya": {
+        kanji: "渋谷駅", lat: 35.6580, lng: 139.7016, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY20" },
+          { line: "JR Saikyo Line", id: "JS19" },
+          { line: "Tokyu Toyoko Line", id: "TY01" },
+          { line: "Tokyu Den-en-toshi Line", id: "DT01" },
+          { line: "Keio Inokashira Line", id: "IN01" },
+          { line: "Tokyo Metro Ginza Line", id: "G01" },
+          { line: "Tokyo Metro Hanzomon Line", id: "Z01" },
+          { line: "Tokyo Metro Fukutoshin Line", id: "F16" }
+        ]
+      },
+      "shinagawa": {
+        kanji: "品川駅", lat: 35.6284, lng: 139.7387, city: "Tokyo",
+        railways: [
+          { line: "JR Yamanote Line", id: "JY25" },
+          { line: "JR Tokaido Main Line", id: "JT03" },
+          { line: "JR Keihin-Tohoku Line", id: "JK20" },
+          { line: "Tokaido Shinkansen", id: "S00-S" },
+          { line: "Keikyu Main Line", id: "KK01" }
+        ]
+      },
+      "kyoto": {
+        kanji: "京都駅", lat: 34.9858, lng: 135.7588, city: "Kyoto",
+        railways: [
+          { line: "JR Kyoto Line (Tokaido Main)", id: "JR-A31" },
+          { line: "Tokaido Shinkansen", id: "S08" },
+          { line: "JR Nara Line", id: "JR-D01" },
+          { line: "JR Sagano Line (Sanin Main)", id: "JR-E01" },
+          { line: "Kintetsu Kyoto Line", id: "B01" },
+          { line: "Kyoto Subway Karasuma Line", id: "K11" }
+        ]
+      },
+      "osaka": {
+        kanji: "大阪駅", lat: 34.7025, lng: 135.4959, city: "Osaka",
+        railways: [
+          { line: "JR Osaka Loop Line", id: "JR-O01" },
+          { line: "JR Kyoto Line", id: "JR-A47" },
+          { line: "JR Kobe Line", id: "JR-A47" },
+          { line: "Osaka Metro Midosuji Line (Umeda)", id: "M16" },
+          { line: "Hankyu Main Line", id: "HK01" },
+          { line: "Hanshin Main Line", id: "HS01" }
+        ]
+      },
+      "shin-osaka": {
+        kanji: "新大阪駅", lat: 34.7335, lng: 135.5003, city: "Osaka",
+        railways: [
+          { line: "Tokaido Shinkansen", id: "S09" },
+          { line: "Sanyo Shinkansen", id: "JR-A46" },
+          { line: "JR Kyoto Line", id: "JR-A46" },
+          { line: "Osaka Higashi Line", id: "JR-F02" },
+          { line: "Osaka Metro Midosuji Line", id: "M13" }
+        ]
+      },
+      "namba": {
+        kanji: "難波駅", lat: 34.6626, lng: 135.5014, city: "Osaka",
+        railways: [
+          { line: "Nankai Main Line", id: "NK01" },
+          { line: "Osaka Metro Midosuji Line", id: "M20" },
+          { line: "Kintetsu Namba Line", id: "A01" },
+          { line: "Hanshin Namba Line", id: "HS41" }
+        ]
+      },
+      "nagoya": {
+        kanji: "名古屋駅", lat: 35.1709, lng: 136.8815, city: "Nagoya",
+        railways: [
+          { line: "Tokaido Shinkansen", id: "S05" },
+          { line: "JR Tokaido Main Line", id: "JR-CA68" },
+          { line: "Meitetsu Nagoya Line", id: "NH36" },
+          { line: "Kintetsu Nagoya Line", id: "E01" },
+          { line: "Nagoya Subway Higashiyama Line", id: "H08" }
+        ]
+      },
+      "yokohama": {
+        kanji: "横浜駅", lat: 35.4658, lng: 139.6223, city: "Yokohama",
+        railways: [
+          { line: "JR Tokaido Main Line", id: "JT05" },
+          { line: "JR Keihin-Tohoku Line", id: "JK12" },
+          { line: "Tokyu Toyoko Line", id: "TY21" },
+          { line: "Keikyu Main Line", id: "KK37" },
+          { line: "Minatomirai Line", id: "MM01" },
+          { line: "Yokohama Subway Blue Line", id: "B20" }
+        ]
+      },
+      "hakata": {
+        kanji: "博多駅", lat: 33.5902, lng: 130.4207, city: "Fukuoka",
+        railways: [
+          { line: "Sanyo Shinkansen", id: "JR-A01" },
+          { line: "Kyushu Shinkansen", id: "K01" },
+          { line: "JR Kagoshima Main Line", id: "JA00" },
+          { line: "Fukuoka Subway Kuko Line", id: "K11" }
+        ]
+      }
+    };
+
+    // Sample Entries[cite: 1]
+    const DEFAULT_ENTRIES = [
+      {
+        id: 101,
+        type: "journey",
+        status: "visited",
+        line: "Tokaido Shinkansen",
+        startStationId: "S00",
+        endStationId: "S08",
+        notes: "Fast Shinkansen bullet train journey between Tokyo and Kyoto.",
+        date: "7/26/2026",
+        startStampCollected: true,
+        endStampCollected: true,
+        startStampPhoto: null,
+        endStampPhoto: null,
+        start: { name: "Tokyo", code: "JY01", lat: 35.6812, lng: 139.7671 },
+        end: { name: "Kyoto", code: "JR-A31", lat: 34.9858, lng: 135.7588 }
+      },
+      {
+        id: 102,
+        type: "single",
+        status: "visited",
+        line: "JR Yamanote Line",
+        startStationId: "JY19",
+        notes: "Visited Meiji Shrine via old station exit. Stamp at ticket gate.",
+        date: "7/27/2026",
+        startStampCollected: true,
+        endStampCollected: false,
+        startStampPhoto: null,
+        endStampPhoto: null,
+        start: { name: "Harajuku", code: "JY19", lat: 35.6702, lng: 139.7027 }
+      },
+      {
+        id: 103,
+        type: "single",
+        status: "wishlist",
+        line: "Sanyo Shinkansen",
+        startStationId: "JR-A01",
+        notes: "Want to visit Hakata Station for famous Hakata Tonkotsu Ramen.",
+        date: "7/27/2026",
+        startStampCollected: false,
+        endStampCollected: false,
+        startStampPhoto: null,
+        endStampPhoto: null,
+        start: { name: "Hakata", code: "JR-A01", lat: 33.5902, lng: 130.4207 }
+      }
+    ];
+
+    // State[cite: 1]
+    let rawEntries = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_ENTRIES;
+    
+    let entries = rawEntries.map(item => {
+      if (item.startStampCollected === undefined) {
+        item.startStampCollected = !!item.stampCollected;
+      }
+      if (item.endStampCollected === undefined) {
+        item.endStampCollected = !!item.stampCollected;
+      }
+      return item;
+    });
+
+    let currentMode = 'single';
+    let selectedStart = null;
+    let selectedEnd = null;
+    let debounceTimer = null;
+    let fileHandle = null;
+
+    // Leaflet Pins[cite: 1]
+    const greenIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    const blueIcon = new L.Icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // Map Setup[cite: 1]
+    const map = L.map('map').setView([35.6812, 139.7671], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let mapLayerGroup = L.layerGroup().addTo(map);
+
+    // Form elements[cite: 1]
+    const form = document.getElementById('trackerForm');
+    const startInput = document.getElementById('startStationInput');
+    const endInput = document.getElementById('endStationInput');
+    const endGroup = document.getElementById('endGroup');
+    const railwaySelect = document.getElementById('railwaySelect');
+    const customRailwayBox = document.getElementById('customRailwayBox');
+    const customLineInput = document.getElementById('customLineInput');
+    const customIdInput = document.getElementById('customIdInput');
+    const statusInput = document.getElementById('statusInput');
+    const notesInput = document.getElementById('notesInput');
+    const startResults = document.getElementById('startResults');
+    const endResults = document.getElementById('endResults');
+    const verificationBox = document.getElementById('verificationBox');
+    const formStampWrapper = document.getElementById('formStampWrapper');
+    const startStampRow = document.getElementById('startStampRow');
+    const startStampInput = document.getElementById('startStampInput');
+    const startStampLabel = document.getElementById('startStampLabel');
+    const startStampPhotoInput = document.getElementById('startStampPhotoInput');
+    const endStampWrapperContainer = document.getElementById('endStampWrapperContainer');
+    const endStampRow = document.getElementById('endStampRow');
+    const endStampInput = document.getElementById('endStampInput');
+    const endStampLabel = document.getElementById('endStampLabel');
+    const endStampPhotoInput = document.getElementById('endStampPhotoInput');
+
+    // File System Access API Integration Functions
+    async function saveToFileSystem() {
+      try {
+        if (!fileHandle) {
+          const options = {
+            suggestedName: 'japan_train_tracker_data.json',
+            types: [{
+              description: 'JSON Files',
+              accept: { 'application/json': ['.json'] }
+            }]
+          };
+          fileHandle = await window.showSaveFilePicker(options);
+        }
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(entries, null, 2));
+        await writable.close();
+
+        document.getElementById('file-status').textContent = `Saved to: ${fileHandle.name}`;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Error saving file:", err);
+        }
+      }
+    }
+
+    async function loadFromFileSystem() {
+      try {
+        const options = {
+          multiple: false,
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        };
+        const handles = await window.showOpenFilePicker(options);
+        fileHandle = handles[0];
+        
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        
+        let loaded = JSON.parse(contents);
+        entries = loaded.map(item => {
+          if (item.startStampCollected === undefined) {
+            item.startStampCollected = !!item.stampCollected;
+          }
+          if (item.endStampCollected === undefined) {
+            item.endStampCollected = !!item.stampCollected;
+          }
+          return item;
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        render();
+
+        document.getElementById('file-status').textContent = `Loaded: ${fileHandle.name}`;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error("Error loading file:", err);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const saveBtn = document.getElementById('fs-save-btn');
+      const loadBtn = document.getElementById('fs-load-btn');
+      const fsBarContainer = document.getElementById('fsBarContainer');
+
+      if ('showSaveFilePicker' in window) {
+        fsBarContainer.style.display = 'flex';
+        saveBtn.addEventListener('click', saveToFileSystem);
+        loadBtn.addEventListener('click', loadFromFileSystem);
+      }
+    });
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('tabSingle').classList.toggle('active', mode === 'single');
+      document.getElementById('tabJourney').classList.toggle('active', mode === 'journey');
+      document.getElementById('tabWishlist').classList.toggle('active', mode === 'wishlist');
+      
+      if (mode === 'single') {
+        document.getElementById('formHeading').textContent = '+ Log Single Visited Station';
+        endGroup.style.display = 'none';
+        endInput.required = false;
+        startInput.placeholder = 'Station Name (e.g. Kyoto)...';
+        statusInput.value = 'visited';
+      } else if (mode === 'journey') {
+        document.getElementById('formHeading').textContent = '+ Log New Journey (Start ➔ End)';
+        endGroup.style.display = 'block';
+        endInput.required = true;
+        startInput.placeholder = 'Departure Station (e.g. Shinjuku)...';
+        statusInput.value = 'visited';
+      } else if (mode === 'wishlist') {
+        document.getElementById('formHeading').textContent = '+ Add Wishlist Station (Want to Visit)';
+        endGroup.style.display = 'none';
+        endInput.required = false;
+        startInput.placeholder = 'Target Station (e.g. Hakata)...';
+        statusInput.value = 'wishlist';
+      }
+      resetSelection();
+    }
+
+    function isStationStampedInHistory(stationName) {
+      if (!stationName) return false;
+      const cleanName = stationName.trim().toLowerCase();
+      return entries.some(entry => {
+        if (entry.status !== 'visited') return false;
+        
+        const startMatch = entry.start && entry.start.name && entry.start.name.trim().toLowerCase() === cleanName;
+        if (startMatch && entry.startStampCollected) return true;
+
+        if (entry.type === 'journey' && entry.end && entry.end.name) {
+          const endMatch = entry.end.name.trim().toLowerCase() === cleanName;
+          if (endMatch && entry.endStampCollected) return true;
+        }
+
+        return false;
+      });
+    }
+
+    function getStationPhotoFromHistory(stationName) {
+      if (!stationName) return null;
+      const cleanName = stationName.trim().toLowerCase();
+      for (const entry of entries) {
+        if (entry.start && entry.start.name && entry.start.name.trim().toLowerCase() === cleanName && entry.startStampPhoto) {
+          return entry.startStampPhoto;
+        }
+        if (entry.type === 'journey' && entry.end && entry.end.name && entry.end.name.trim().toLowerCase() === cleanName && entry.endStampPhoto) {
+          return entry.endStampPhoto;
+        }
+      }
+      return null;
+    }
+
+    function updateFormStampCheckboxes() {
+      const isVisited = statusInput.value === 'visited';
+      formStampWrapper.style.display = isVisited ? 'flex' : 'none';
+      if (!isVisited) return;
+
+      const depName = selectedStart ? selectedStart.name : startInput.value.trim();
+      const arrName = selectedEnd ? selectedEnd.name : endInput.value.trim();
+
+      const depStampedInHist = isStationStampedInHistory(depName);
+      startStampLabel.innerHTML = `${currentMode === 'journey' ? 'Departure Station' : 'Station'} Stamp (${depName || 'Departure'})${depStampedInHist ? ' <span style="font-weight:normal; font-size:0.8rem; color:#16a34a;">✓ (Previously Stamped)</span>' : ''}`;
+      if (depStampedInHist) {
+        startStampInput.checked = true;
+      }
+
+      if (currentMode === 'journey') {
+        endStampWrapperContainer.style.display = 'flex';
+        const arrStampedInHist = isStationStampedInHistory(arrName);
+        endStampLabel.innerHTML = `Arrival Station Stamp (${arrName || 'Arrival'})${arrStampedInHist ? ' <span style="font-weight:normal; font-size:0.8rem; color:#16a34a;">✓ (Previously Stamped)</span>' : ''}`;
+        if (arrStampedInHist) {
+          endStampInput.checked = true;
+        }
+      } else {
+        endStampWrapperContainer.style.display = 'none';
+      }
+    }
+
+    function resetSelection() {
+      selectedStart = null;
+      selectedEnd = null;
+      verificationBox.style.display = 'none';
+      verificationBox.innerHTML = '';
+      startStampInput.checked = false;
+      endStampInput.checked = false;
+      startStampPhotoInput.value = '';
+      endStampPhotoInput.value = '';
+      populateRailwayDropdown();
+      updateFormStampCheckboxes();
+    }
+
+    setupAutocomplete(startInput, startResults, 'start');
+    setupAutocomplete(endInput, endResults, 'end');
+
+    startInput.addEventListener('input', updateFormStampCheckboxes);
+    endInput.addEventListener('input', updateFormStampCheckboxes);
+
+    function setupAutocomplete(inputEl, resultsEl, type) {
+      inputEl.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        clearTimeout(debounceTimer);
+
+        if (query.length < 2) {
+          resultsEl.innerHTML = '';
+          return;
+        }
+
+        debounceTimer = setTimeout(() => {
+          searchStation(query, resultsEl, type);
+        }, 250);
+      });
+    }
+
+    async function searchStation(query, resultsEl, type) {
+      resultsEl.innerHTML = '';
+      let suggestions = [];
+
+      for (const [key, dbData] of Object.entries(JAPAN_STATION_DB)) {
+        if (key.includes(query) || dbData.kanji.includes(query)) {
+          suggestions.push({
+            name: key.charAt(0).toUpperCase() + key.slice(1),
+            railways: dbData.railways,
+            location: dbData.city,
+            lat: dbData.lat,
+            lng: dbData.lng
+          });
+        }
+      }
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ' station Japan')}&addressdetails=1&extratags=1&limit=4`, {
+          headers: { 'User-Agent': 'JapanRouteTracker/13.0' }
+        });
+        const data = await res.json();
+        data.forEach(item => {
+          let name = item.display_name.split(',')[0].replace(/ station/i, '').replace(/駅/i, '').trim();
+          if (!suggestions.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+            let prefix = name.substring(0, 2).toUpperCase();
+            let lineName = item.extratags?.railway || item.address?.railway || 'Japan Railways';
+            let stationId = item.extratags?.ref || `${prefix}-01`;
+
+            suggestions.push({
+              name: name,
+              railways: [{ line: lineName, id: stationId }],
+              location: item.address?.city || item.address?.state || 'Japan',
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            });
+          }
+        });
+      } catch (err) {
+        console.warn('API lookup offline', err);
+      }
+
+      renderResults(suggestions, resultsEl, type);
+    }
+
+    function renderResults(items, resultsEl, type) {
+      resultsEl.innerHTML = '';
+      if (!items || items.length === 0) return;
+
+      items.forEach(item => {
+        const primaryLine = item.railways[0];
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.innerHTML = `
+          <div class="autocomplete-title">
+            <span>${item.name} Station</span>
+            <span class="station-number-badge">${primaryLine.id}</span>
+          </div>
+          <div class="autocomplete-sub">Primary: ${primaryLine.line} (${item.railways.length} railways available)</div>
+        `;
+
+        div.addEventListener('click', () => {
+          if (type === 'start') {
+            startInput.value = item.name;
+            selectedStart = item;
+          } else {
+            endInput.value = item.name;
+            selectedEnd = item;
+          }
+          resultsEl.innerHTML = '';
+          populateRailwayDropdown();
+          verifyRoute();
+          updateFormStampCheckboxes();
+        });
+
+        resultsEl.appendChild(div);
+      });
+    }
+
+    function populateRailwayDropdown() {
+      railwaySelect.innerHTML = '<option value="">-- Choose Railway Line & Station ID --</option>';
+
+      let optionsList = [];
+
+      if (selectedStart && selectedStart.railways) {
+        selectedStart.railways.forEach(r => {
+          let endMatching = null;
+          if (currentMode === 'journey' && selectedEnd && selectedEnd.railways) {
+            endMatching = selectedEnd.railways.find(er => er.line.toLowerCase() === r.line.toLowerCase());
+          }
+
+          optionsList.push({
+            line: r.line,
+            startId: r.id,
+            endId: endMatching ? endMatching.id : (selectedEnd && selectedEnd.railways ? selectedEnd.railways[0].id : '')
+          });
+        });
+      }
+
+      if (currentMode === 'journey' && selectedEnd && selectedEnd.railways) {
+        selectedEnd.railways.forEach(er => {
+          if (!optionsList.some(o => o.line.toLowerCase() === er.line.toLowerCase())) {
+            optionsList.push({
+              line: er.line,
+              startId: selectedStart && selectedStart.railways ? selectedStart.railways[0].id : '',
+              endId: er.id
+            });
+          }
+        });
+      }
+
+      optionsList.forEach(opt => {
+        const optionEl = document.createElement('option');
+        let idDisplay = '';
+        if (currentMode === 'journey') {
+          idDisplay = `[Dep: ${opt.startId || 'N/A'} ➔ Arr: ${opt.endId || 'N/A'}]`;
+        } else {
+          idDisplay = `[Station ID: ${opt.startId}]`;
+        }
+
+        optionEl.value = JSON.stringify(opt);
+        optionEl.textContent = `${opt.line} ${idDisplay}`;
+        railwaySelect.appendChild(optionEl);
+      });
+
+      const customOpt = document.createElement('option');
+      customOpt.value = 'custom';
+      customOpt.textContent = '+ Enter Custom Railway Line & ID...';
+      railwaySelect.appendChild(customOpt);
+
+      if (optionsList.length > 0) {
+        railwaySelect.selectedIndex = 1;
+        handleRailwayDropdownChange();
+      }
+    }
+
+    function handleRailwayDropdownChange() {
+      if (railwaySelect.value === 'custom') {
+        customRailwayBox.style.display = 'grid';
+        customLineInput.required = true;
+        customIdInput.required = true;
+      } else {
+        customRailwayBox.style.display = 'none';
+        customLineInput.required = false;
+        customIdInput.required = false;
+      }
+      verifyRoute();
+    }
+
+    function verifyRoute() {
+      let selectedVal = railwaySelect.value;
+      if (!selectedVal) {
+        verificationBox.style.display = 'none';
+        return;
+      }
+
+      let lineName = '';
+      let startId = '';
+      let endId = '';
+
+      if (selectedVal === 'custom') {
+        lineName = customLineInput.value || 'Custom Line';
+        startId = customIdInput.value || 'ST-01';
+        endId = customIdInput.value || 'ST-02';
+      } else {
+        try {
+          let parsed = JSON.parse(selectedVal);
+          lineName = parsed.line;
+          startId = parsed.startId;
+          endId = parsed.endId;
+        } catch(e){}
+      }
+
+      verificationBox.style.display = 'block';
+
+      if (currentMode === 'journey' && (selectedStart || startInput.value)) {
+        let depName = selectedStart ? selectedStart.name : startInput.value;
+        let arrName = selectedEnd ? selectedEnd.name : endInput.value;
+        verificationBox.innerHTML = `
+          <strong>✓ Authenticated Station Identifiers & Chosen Railway:</strong><br>
+          Departure: <strong>${depName}</strong> [<span class="station-number-badge">${startId || 'N/A'}</span>]<br>
+          Arrival: <strong>${arrName}</strong> [<span class="station-number-badge">${endId || 'N/A'}</span>]<br>
+          Selected Railway Line: <em>${lineName}</em>
+        `;
+      } else if ((currentMode === 'single' || currentMode === 'wishlist') && (selectedStart || startInput.value)) {
+        let stName = selectedStart ? selectedStart.name : startInput.value;
+        verificationBox.innerHTML = `
+          <strong>✓ Authenticated Station Identifier & Railway Line:</strong><br>
+          Station: <strong>${stName}</strong> [<span class="station-number-badge">${startId || 'N/A'}</span>]<br>
+          Selected Railway Line: <em>${lineName}</em>
+        `;
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.autocomplete-wrapper')) {
+        startResults.innerHTML = '';
+        endResults.innerHTML = '';
+      }
+    });
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function updateStationStampInAllEntries(stationName, isStamped, photoUrl = null) {
+      if (!stationName) return;
+      const cleanName = stationName.trim().toLowerCase();
+      entries = entries.map(entry => {
+        let updated = { ...entry };
+        if (updated.start && updated.start.name && updated.start.name.trim().toLowerCase() === cleanName) {
+          updated.startStampCollected = isStamped;
+          if (photoUrl !== null) updated.startStampPhoto = photoUrl;
+        }
+        if (updated.type === 'journey' && updated.end && updated.end.name && updated.end.name.trim().toLowerCase() === cleanName) {
+          updated.endStampCollected = isStamped;
+          if (photoUrl !== null) updated.endStampPhoto = photoUrl;
+        }
+        return updated;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      if (fileHandle) { saveToFileSystem(); }
+    }
+
+    async function uploadCardStampPhoto(id, stationType, event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const photoUrl = await readFileAsDataURL(file);
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      let stationName = stationType === 'start' ? entry.start?.name : entry.end?.name;
+      if (stationType === 'start') {
+        entry.startStampPhoto = photoUrl;
+        entry.startStampCollected = true;
+      } else {
+        entry.endStampPhoto = photoUrl;
+        entry.endStampCollected = true;
+      }
+
+      if (stationName) {
+        updateStationStampInAllEntries(stationName, true, photoUrl);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        render();
+        if (fileHandle) { saveToFileSystem(); }
+      }
+    }
+
+    function markWishlistAsVisited(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+      entry.status = 'visited';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      render();
+      if (fileHandle) { saveToFileSystem(); }
+    }
+
+    // Save Entry Form Submission[cite: 1]
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      let isVisited = statusInput.value === 'visited';
+      let lineName = '';
+      let startId = 'ST-01';
+      let endId = 'ST-02';
+
+      if (railwaySelect.value === 'custom') {
+        lineName = customLineInput.value.trim();
+        startId = customIdInput.value.trim();
+        endId = customIdInput.value.trim();
+      } else if (railwaySelect.value) {
+        let parsed = JSON.parse(railwaySelect.value);
+        lineName = parsed.line;
+        startId = parsed.startId;
+        endId = parsed.endId;
+      }
+
+      let startStamped = isVisited ? startStampInput.checked : false;
+      let endStamped = (isVisited && currentMode === 'journey') ? endStampInput.checked : false;
+
+      let startPhotoFile = startStampPhotoInput.files[0];
+      let endPhotoFile = endStampPhotoInput.files[0];
+
+      let startPhotoUrl = startPhotoFile ? await readFileAsDataURL(startPhotoFile) : null;
+      let endPhotoUrl = endPhotoFile ? await readFileAsDataURL(endPhotoFile) : null;
+
+      let entryType = (currentMode === 'journey') ? 'journey' : 'single';
+
+      let newEntry = {
+        id: Date.now(),
+        type: entryType,
+        status: statusInput.value,
+        line: lineName || 'Japan Railways',
+        startStationId: startId,
+        endStationId: endId,
+        notes: notesInput.value.trim(),
+        date: new Date().toLocaleDateString(),
+        startStampCollected: startStamped || !!startPhotoUrl,
+        endStampCollected: endStamped || !!endPhotoUrl,
+        startStampPhoto: startPhotoUrl,
+        endStampPhoto: endPhotoUrl
+      };
+
+      if (currentMode === 'journey') {
+        let startObj = selectedStart || { name: startInput.value.trim(), lat: null, lng: null };
+        let endObj = selectedEnd || { name: endInput.value.trim(), lat: null, lng: null };
+
+        newEntry.start = { ...startObj, code: startId };
+        newEntry.end = { ...endObj, code: endId };
+      } else {
+        let singleObj = selectedStart || { name: startInput.value.trim(), lat: null, lng: null };
+        newEntry.start = { ...singleObj, code: startId };
+      }
+
+      entries.push(newEntry);
+      
+      const depName = newEntry.start?.name;
+      const arrName = newEntry.end?.name;
+
+      if (depName && (newEntry.startStampCollected || startPhotoUrl)) {
+        updateStationStampInAllEntries(depName, true, startPhotoUrl);
+      }
+      if (arrName && (newEntry.endStampCollected || endPhotoUrl)) {
+        updateStationStampInAllEntries(arrName, true, endPhotoUrl);
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+
+      form.reset();
+      resetSelection();
+      render();
+
+      if (fileHandle) {
+        saveToFileSystem();
+      }
+    });
+
+    function toggleStationStamp(id, stationType) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      let targetStationName = '';
+      let currentVal = false;
+
+      if (stationType === 'start') {
+        targetStationName = entry.start ? entry.start.name : '';
+        currentVal = entry.startStampCollected || isStationStampedInHistory(targetStationName);
+      } else if (stationType === 'end' && entry.end) {
+        targetStationName = entry.end ? entry.end.name : '';
+        currentVal = entry.endStampCollected || isStationStampedInHistory(targetStationName);
+      }
+
+      if (targetStationName) {
+        updateStationStampInAllEntries(targetStationName, !currentVal);
+      }
+      render();
+    }
+
+    function deleteEntry(id) {
+      entries = entries.filter(item => item.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      render();
+      if (fileHandle) {
+        saveToFileSystem();
+      }
+    }
+
+    // Map Render[cite: 1]
+    function updateMap() {
+      mapLayerGroup.clearLayers();
+      const bounds = [];
+
+      entries.forEach(entry => {
+        if (entry.type === 'journey' && entry.start.lat && entry.end.lat) {
+          const startMarker = L.marker([entry.start.lat, entry.start.lng], { icon: greenIcon }).addTo(mapLayerGroup);
+          startMarker.bindPopup(`<b>Start: ${entry.start.name} Station [${entry.startStationId || entry.start.code}]</b><br>Railway: ${entry.line}`);
+          bounds.push([entry.start.lat, entry.start.lng]);
+
+          const endMarker = L.marker([entry.end.lat, entry.end.lng], { icon: blueIcon }).addTo(mapLayerGroup);
+          endMarker.bindPopup(`<b>End: ${entry.end.name} Station [${entry.endStationId || entry.end.code}]</b><br>Railway: ${entry.line}`);
+          bounds.push([entry.end.lat, entry.end.lng]);
+
+          L.polyline([
+            [entry.start.lat, entry.start.lng],
+            [entry.end.lat, entry.end.lng]
+          ], { color: '#008000', weight: 4, opacity: 0.7, dashArray: '6, 8' }).addTo(mapLayerGroup);
+
+        } else if (entry.start && entry.start.lat && entry.start.lng) {
+          const marker = L.marker([entry.start.lat, entry.start.lng], { icon: greenIcon }).addTo(mapLayerGroup);
+          marker.bindPopup(`<b>Station: ${entry.start.name} [${entry.startStationId || entry.start.code}]</b><br>Railway: ${entry.line}`);
+          bounds.push([entry.start.lat, entry.start.lng]);
+        }
+      });
+
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 });
+      }
+    }
+
+    // Render Dashboard Lists[cite: 1]
+    function render() {
+      const wishlistContainer = document.getElementById('wishlistContainer');
+      const visitedContainer = document.getElementById('visitedContainer');
+
+      wishlistContainer.innerHTML = '';
+      visitedContainer.innerHTML = '';
+
+      const wishlistItems = entries.filter(e => e.status === 'wishlist');
+      const visitedItems = entries.filter(e => e.status === 'visited');
+
+      document.getElementById('wishlistCount').textContent = wishlistItems.length;
+      document.getElementById('visitedCount').textContent = visitedItems.length;
+
+      if (wishlistItems.length === 0) {
+        wishlistContainer.innerHTML = '<div class="empty-state">No planned routes or wishlist stations logged yet.</div>';
+      } else {
+        wishlistItems.forEach(item => wishlistContainer.appendChild(createCard(item)));
+      }
+
+      if (visitedItems.length === 0) {
+        visitedContainer.innerHTML = '<div class="empty-state">No completed journeys or visited stations logged yet.</div>';
+      } else {
+        visitedItems.forEach(item => visitedContainer.appendChild(createCard(item)));
+      }
+
+      updateMap();
+    }
+
+    function createCard(item) {
+      const card = document.createElement('div');
+      card.className = 'card-item';
+
+      let titleHtml = '';
+      let stationIdTagHtml = '';
+
+      if (item.type === 'journey') {
+        let startCode = item.startStationId || item.start.code;
+        let endCode = item.endStationId || item.end.code;
+        titleHtml = `
+          <strong>${escapeHtml(item.start.name)}</strong> 
+          <span class="station-number-badge">${escapeHtml(startCode)}</span>
+          <span class="route-arrow">➔</span>
+          <strong>${escapeHtml(item.end.name)}</strong> 
+          <span class="station-number-badge">${escapeHtml(endCode)}</span>
+        `;
+        stationIdTagHtml = `<span>Departure: ${escapeHtml(startCode)} | Arrival: ${escapeHtml(endCode)}</span>`;
+      } else {
+        let stCode = item.startStationId || item.start.code;
+        titleHtml = `
+          <strong>${escapeHtml(item.start.name)} Station</strong> 
+          <span class="station-number-badge">${escapeHtml(stCode)}</span>
+        `;
+        stationIdTagHtml = `<span>Station ID: ${escapeHtml(stCode)}</span>`;
+      }
+
+      const depStamped = item.startStampCollected || isStationStampedInHistory(item.start?.name);
+      const arrStamped = item.type === 'journey' && (item.endStampCollected || isStationStampedInHistory(item.end?.name));
+      
+      const depPhoto = item.startStampPhoto || getStationPhotoFromHistory(item.start?.name);
+      const arrPhoto = item.type === 'journey' ? (item.endStampPhoto || getStationPhotoFromHistory(item.end?.name)) : null;
+
+      let stampBadgesHtml = '';
+      if (item.status === 'visited') {
+        if (item.type === 'journey') {
+          if (depStamped) stampBadgesHtml += `<span class="stamp-badge">Dep Stamp (${escapeHtml(item.start.name)})</span> `;
+          if (arrStamped) stampBadgesHtml += `<span class="stamp-badge">Arr Stamp (${escapeHtml(item.end.name)})</span>`;
+        } else if (depStamped) {
+          stampBadgesHtml += `<span class="stamp-badge">Stamp Collected</span>`;
+        }
+      }
+
+      let stampSectionHtml = '';
+      if (item.status === 'visited') {
+        stampSectionHtml = `
+          <div class="stamp-container">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <label class="stamp-checkbox-label" style="margin:0;">
+                <input type="checkbox" ${depStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'start')">
+                <span>${item.type === 'journey' ? 'Departure' : 'Station'} Stamp (${escapeHtml(item.start.name)})</span>
+              </label>
+              <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'start', event)" title="Upload/Change Stamp Photo">
+            </div>
+            ${depPhoto ? `<div style="margin-top: 4px;"><img src="${depPhoto}" alt="Station Stamp" style="max-width: 120px; max-height: 120px; border-radius: 4px; border: 1px solid var(--border-color); object-fit: cover;"></div>` : ''}
+
+            ${item.type === 'journey' ? `
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px;">
+                <label class="stamp-checkbox-label" style="margin:0;">
+                  <input type="checkbox" ${arrStamped ? 'checked' : ''} onchange="toggleStationStamp(${item.id}, 'end')">
+                  <span>Arrival Stamp (${escapeHtml(item.end.name)})</span>
+                </label>
+                <input type="file" accept="image/*" style="font-size: 0.8rem; max-width: 220px;" onchange="uploadCardStampPhoto(${item.id}, 'end', event)" title="Upload/Change Arrival Stamp Photo">
+              </div>
+              ${arrPhoto ? `<div style="margin-top: 4px;"><img src="${arrPhoto}" alt="Arrival Station Stamp" style="max-width: 120px; max-height: 120px; border-radius: 4px; border: 1px solid var(--border-color); object-fit: cover;"></div>` : ''}
+            ` : ''}
+          </div>
+        `;
+      } else if (item.status === 'wishlist') {
+        stampSectionHtml = `
+          <div class="stamp-container">
+            <label class="wishlist-complete-label">
+              <input type="checkbox" onchange="markWishlistAsVisited(${item.id})">
+              <span>Mark as Completed / Visited</span>
+            </label>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="station-header">
+          <div>${titleHtml}</div>
+          <div>${stampBadgesHtml}</div>
+        </div>
+        <div>
+          <span class="station-line-tag">
+            <span>${escapeHtml(item.line)}</span>
+            ${stationIdTagHtml}
+          </span>
+        </div>
+        ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:6px;">${escapeHtml(item.notes)}</div>` : ''}
+        
+        ${stampSectionHtml}
+
+        <div style="font-size:0.78rem; color:#9ca3af; margin-top:8px;">Logged on: ${item.date}</div>
+        <div class="card-actions">
+          <button class="btn-action btn-delete" onclick="deleteEntry(${item.id})">Delete</button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Initial Setup[cite: 1]
+    setMode('single');
+    render();
+  </script>
+</body>
+</html>
