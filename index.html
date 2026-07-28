@@ -446,6 +446,22 @@
       flex-wrap: wrap;
     }
 
+    .btn-edit-id {
+      background: #ffffff;
+      border: 1px solid #93c5fd;
+      color: #1d4ed8;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-edit-id:hover {
+      background: #eff6ff;
+    }
+
     /* Stamp & Wishlist Collection UI */
     .stamp-container {
       margin-top: 10px;
@@ -1051,6 +1067,44 @@
       if (!event || event.target.id === 'imageModal' || event.target.classList.contains('image-modal-close')) {
         document.getElementById('imageModal').style.display = 'none';
       }
+    }
+
+    // Function to Edit Station ID directly from the station tag line
+    function editStationId(id) {
+      const entry = entries.find(e => e.id === id);
+      if (!entry) return;
+
+      if (entry.type === 'journey') {
+        const currentStartId = entry.startStationId || (entry.start ? entry.start.code : '') || '';
+        const currentEndId = entry.endStationId || (entry.end ? entry.end.code : '') || '';
+
+        const newStartId = prompt(`Edit Departure Station ID for ${entry.start?.name || 'Start'}:`, currentStartId);
+        if (newStartId === null) return; // User cancelled
+
+        const newEndId = prompt(`Edit Arrival Station ID for ${entry.end?.name || 'End'}:`, currentEndId);
+        if (newEndId === null) return; // User cancelled
+
+        const cleanStart = newStartId.trim();
+        const cleanEnd = newEndId.trim();
+
+        entry.startStationId = cleanStart;
+        if (entry.start) entry.start.code = cleanStart;
+
+        entry.endStationId = cleanEnd;
+        if (entry.end) entry.end.code = cleanEnd;
+      } else {
+        const currentId = entry.startStationId || (entry.start ? entry.start.code : '') || '';
+        const newId = prompt(`Edit Station ID for ${entry.start?.name || 'Station'}:`, currentId);
+        if (newId === null) return; // User cancelled
+
+        const cleanId = newId.trim();
+        entry.startStationId = cleanId;
+        if (entry.start) entry.start.code = cleanId;
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      render();
+      if (fileHandle) { saveToFileSystem(); }
     }
 
     // File System Access API & Universal Backup Integration Functions
@@ -1829,6 +1883,7 @@
           <span class="station-line-tag">
             <span>${escapeHtml(item.line)}</span>
             ${stationIdTagHtml}
+            <button class="btn-edit-id" onclick="editStationId(${item.id})" title="Edit Station ID">✏️ Edit ID</button>
           </span>
         </div>
         ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:6px;">${escapeHtml(item.notes)}</div>` : ''}
