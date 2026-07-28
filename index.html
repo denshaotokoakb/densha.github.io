@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Japan Train Station & Route Tracker | 日本駅</title>
+  <title>Japan Train Station Tracker | 日本駅</title>
   
   <!-- Leaflet CSS for Map -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -71,13 +71,7 @@
       letter-spacing: 1px;
     }
 
-    .subtitle {
-      color: #6b7280;
-      font-size: 0.95rem;
-      margin-top: 4px;
-    }
-
-    /* File System & Backup Controls Bar (Positioned at Bottom) */
+    /* File System & Backup Controls Bar */
     .file-system-bar {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -351,6 +345,7 @@
       border-radius: 4px;
       letter-spacing: 0.5px;
       border: 1px solid #334155;
+      display: inline-block;
     }
 
     /* Verification Box */
@@ -409,27 +404,34 @@
       gap: 12px;
     }
 
+    /* Flat Entry Card Styles */
     .card-item {
       border: 1px solid var(--border-color);
       border-left: 5px solid var(--jr-green);
       border-radius: 6px;
-      padding: 12px;
-      background: #fafafa;
+      padding: 14px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--jr-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
     }
 
     .route-arrow {
       color: var(--accent-orange);
       font-weight: bold;
-      margin: 0 4px;
-    }
-
-    .station-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 6px;
-      flex-wrap: wrap;
-      gap: 6px;
+      margin: 0 2px;
     }
 
     .station-line-tag {
@@ -442,7 +444,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 4px;
       flex-wrap: wrap;
     }
 
@@ -462,9 +463,9 @@
       background: #eff6ff;
     }
 
-    /* Stamp & Wishlist Collection UI */
+    /* Stamp & Wishlist UI Badges & Buttons */
     .stamp-container {
-      margin-top: 10px;
+      margin-top: 6px;
       padding-top: 8px;
       border-top: 1px dashed var(--border-color);
       display: flex;
@@ -504,7 +505,7 @@
       color: var(--complete-text);
       background: var(--complete-bg);
       border: 1px solid var(--complete-border);
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 6px;
       cursor: pointer;
       user-select: none;
@@ -521,18 +522,6 @@
       height: 16px;
       cursor: pointer;
       accent-color: #16a34a;
-    }
-
-    .stamp-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.75rem;
-      background: #ffedd5;
-      color: #c2410c;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: bold;
     }
 
     .clickable-stamp-img {
@@ -594,7 +583,9 @@
     .card-actions {
       display: flex;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 6px;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .btn-action {
@@ -609,7 +600,6 @@
     .btn-delete {
       background-color: #fee2e2;
       color: #dc2626;
-      margin-left: auto;
     }
 
     .btn-delete:hover {
@@ -628,8 +618,7 @@
 
   <div class="container">
     <header>
-      <h1>日本駅 TRACKER & ROUTE LOG</h1>
-      <div class="subtitle">Log Single Stations or Start-to-End Journeys with Railway Lines & Individual Station Stamps</div>
+      <h1>日本駅 TRACKER</h1>
     </header>
 
     <!-- Mode Selector Tabs -->
@@ -762,7 +751,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    const STORAGE_KEY = 'japan_route_tracker_v13';
+    const STORAGE_KEY = 'japan_route_tracker_v14';
 
     // Japanese Station Database
     const JAPAN_STATION_DB = {
@@ -1069,7 +1058,7 @@
       }
     }
 
-    // Function to Edit Station ID directly from the station tag line
+    // Edit Station ID Function
     function editStationId(id) {
       const entry = entries.find(e => e.id === id);
       if (!entry) return;
@@ -1079,10 +1068,10 @@
         const currentEndId = entry.endStationId || (entry.end ? entry.end.code : '') || '';
 
         const newStartId = prompt(`Edit Departure Station ID for ${entry.start?.name || 'Start'}:`, currentStartId);
-        if (newStartId === null) return; // User cancelled
+        if (newStartId === null) return;
 
         const newEndId = prompt(`Edit Arrival Station ID for ${entry.end?.name || 'End'}:`, currentEndId);
-        if (newEndId === null) return; // User cancelled
+        if (newEndId === null) return;
 
         const cleanStart = newStartId.trim();
         const cleanEnd = newEndId.trim();
@@ -1095,7 +1084,7 @@
       } else {
         const currentId = entry.startStationId || (entry.start ? entry.start.code : '') || '';
         const newId = prompt(`Edit Station ID for ${entry.start?.name || 'Station'}:`, currentId);
-        if (newId === null) return; // User cancelled
+        if (newId === null) return;
 
         const cleanId = newId.trim();
         entry.startStationId = cleanId;
@@ -1107,7 +1096,7 @@
       if (fileHandle) { saveToFileSystem(); }
     }
 
-    // File System Access API & Universal Backup Integration Functions
+    // File System Access API & Backup Functions
     async function saveToFileSystem() {
       try {
         if (!fileHandle) {
@@ -1166,7 +1155,6 @@
       }
     }
 
-    // Export Backup
     async function exportDataJSON() {
       const dataStr = JSON.stringify(entries, null, 2);
 
@@ -1202,7 +1190,6 @@
       document.getElementById('file-status').textContent = "Backup exported to Downloads!";
     }
 
-    // Import Backup
     function importDataJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1380,7 +1367,7 @@
 
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ' station Japan')}&addressdetails=1&extratags=1&limit=4`, {
-          headers: { 'User-Agent': 'JapanRouteTracker/13.0' }
+          headers: { 'User-Agent': 'JapanRouteTracker/14.0' }
         });
         const data = await res.json();
         data.forEach(item => {
@@ -1740,7 +1727,7 @@
       const bounds = [];
 
       entries.forEach(entry => {
-        if (entry.type === 'journey' && entry.start.lat && entry.end.lat) {
+        if (entry.type === 'journey' && entry.start && entry.end && entry.start.lat && entry.end.lat) {
           const startMarker = L.marker([entry.start.lat, entry.start.lng], { icon: greenIcon }).addTo(mapLayerGroup);
           startMarker.bindPopup(`<b>Start: ${entry.start.name} Station [${entry.startStationId || entry.start.code}]</b><br>Railway: ${entry.line}`);
           bounds.push([entry.start.lat, entry.start.lng]);
@@ -1795,28 +1782,31 @@
       updateMap();
     }
 
+    // Create Flat Entry Card Item
     function createCard(item) {
       const card = document.createElement('div');
       card.className = 'card-item';
 
-      let titleHtml = '';
+      let nameHtml = '';
       let stationIdTagHtml = '';
 
       if (item.type === 'journey') {
-        let startCode = item.startStationId || item.start.code;
-        let endCode = item.endStationId || item.end.code;
-        titleHtml = `
-          <strong>${escapeHtml(item.start.name)}</strong> 
-          <span class="station-number-badge">${escapeHtml(startCode)}</span>
-          <span class="route-arrow">➔</span>
-          <strong>${escapeHtml(item.end.name)}</strong> 
-          <span class="station-number-badge">${escapeHtml(endCode)}</span>
+        let startCode = item.startStationId || (item.start ? item.start.code : 'N/A');
+        let endCode = item.endStationId || (item.end ? item.end.code : 'N/A');
+        
+        nameHtml = `
+          <span>${escapeHtml(item.start.name)} <span class="route-arrow">➔</span> ${escapeHtml(item.end.name)}</span>
+          <div>
+            <span class="station-number-badge">${escapeHtml(startCode)}</span>
+            <span class="route-arrow">➔</span>
+            <span class="station-number-badge">${escapeHtml(endCode)}</span>
+          </div>
         `;
         stationIdTagHtml = `<span>Departure: ${escapeHtml(startCode)} | Arrival: ${escapeHtml(endCode)}</span>`;
       } else {
-        let stCode = item.startStationId || item.start.code;
-        titleHtml = `
-          <strong>${escapeHtml(item.start.name)} Station</strong> 
+        let stCode = item.startStationId || (item.start ? item.start.code : 'N/A');
+        nameHtml = `
+          <span>${escapeHtml(item.start.name)} Station</span>
           <span class="station-number-badge">${escapeHtml(stCode)}</span>
         `;
         stationIdTagHtml = `<span>Station ID: ${escapeHtml(stCode)}</span>`;
@@ -1828,17 +1818,8 @@
       const depPhoto = item.startStampPhoto || getStationPhotoFromHistory(item.start?.name);
       const arrPhoto = item.type === 'journey' ? (item.endStampPhoto || getStationPhotoFromHistory(item.end?.name)) : null;
 
-      let stampBadgesHtml = '';
-      if (item.status === 'visited') {
-        if (item.type === 'journey') {
-          if (depStamped) stampBadgesHtml += `<span class="stamp-badge">Dep Stamp (${escapeHtml(item.start.name)})</span> `;
-          if (arrStamped) stampBadgesHtml += `<span class="stamp-badge">Arr Stamp (${escapeHtml(item.end.name)})</span>`;
-        } else if (depStamped) {
-          stampBadgesHtml += `<span class="stamp-badge">Stamp Collected</span>`;
-        }
-      }
-
       let stampSectionHtml = '';
+
       if (item.status === 'visited') {
         stampSectionHtml = `
           <div class="stamp-container">
@@ -1863,7 +1844,7 @@
             ` : ''}
           </div>
         `;
-      } else if (item.status === 'wishlist') {
+      } else {
         stampSectionHtml = `
           <div class="stamp-container">
             <label class="wishlist-complete-label">
@@ -1875,9 +1856,8 @@
       }
 
       card.innerHTML = `
-        <div class="station-header">
-          <div>${titleHtml}</div>
-          <div>${stampBadgesHtml}</div>
+        <div class="card-title">
+          ${nameHtml}
         </div>
         <div>
           <span class="station-line-tag">
@@ -1886,13 +1866,13 @@
             <button class="btn-edit-id" onclick="editStationId(${item.id})" title="Edit Station ID">✏️ Edit ID</button>
           </span>
         </div>
-        ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:6px;">${escapeHtml(item.notes)}</div>` : ''}
+        ${item.notes ? `<div style="font-size:0.85rem; color:#4b5563; margin-top:4px;">${escapeHtml(item.notes)}</div>` : ''}
         
         ${stampSectionHtml}
 
-        <div style="font-size:0.78rem; color:#9ca3af; margin-top:8px;">Logged on: ${item.date}</div>
         <div class="card-actions">
-          <button class="btn-action btn-delete" onclick="deleteEntry(${item.id})">Delete</button>
+          <span style="font-size:0.78rem; color:#9ca3af;">Logged: ${item.date}</span>
+          <button class="btn-action btn-delete" onclick="deleteEntry(${item.id})">Delete Entry</button>
         </div>
       `;
 
