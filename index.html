@@ -385,6 +385,31 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
+    /* Collapsible Section Styles */
+    .section-column details > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-column details > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .section-column details > summary::after {
+      content: '▼';
+      font-size: 0.75rem;
+      color: #6b7280;
+      transition: transform 0.2s;
+      margin-left: 8px;
+    }
+
+    .section-column details[open] > summary::after {
+      transform: rotate(180deg);
+    }
+
     .section-title {
       font-size: 1.1rem;
       font-weight: bold;
@@ -394,6 +419,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      width: 100%;
     }
 
     .badge-count {
@@ -703,22 +729,26 @@
       </form>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Dashboard (Collapsible Sections) -->
     <div class="sections-grid" style="margin-bottom: 24px;">
       <div class="section-column">
-        <div class="section-title">
-          <span>Planned Journeys & Wishlist Stations</span>
-          <span class="badge-count" id="wishlistCount">0</span>
-        </div>
-        <div class="station-list" id="wishlistContainer"></div>
+        <details open>
+          <summary class="section-title">
+            <span>Planned Journeys & Wishlist Stations</span>
+            <span class="badge-count" id="wishlistCount">0</span>
+          </summary>
+          <div class="station-list" id="wishlistContainer" style="margin-top: 12px;"></div>
+        </details>
       </div>
 
       <div class="section-column">
-        <div class="section-title">
-          <span>Completed Journeys & Visited Stations</span>
-          <span class="badge-count" id="visitedCount">0</span>
-        </div>
-        <div class="station-list" id="visitedContainer"></div>
+        <details open>
+          <summary class="section-title">
+            <span>Completed Journeys & Visited Stations</span>
+            <span class="badge-count" id="visitedCount">0</span>
+          </summary>
+          <div class="station-list" id="visitedContainer" style="margin-top: 12px;"></div>
+        </details>
       </div>
     </div>
 
@@ -1079,10 +1109,10 @@
         const currentEndId = entry.endStationId || (entry.end ? entry.end.code : '') || '';
 
         const newStartId = prompt(`Edit Departure Station ID for ${entry.start?.name || 'Start'}:`, currentStartId);
-        if (newStartId === null) return; // User cancelled
+        if (newStartId === null) return;
 
         const newEndId = prompt(`Edit Arrival Station ID for ${entry.end?.name || 'End'}:`, currentEndId);
-        if (newEndId === null) return; // User cancelled
+        if (newEndId === null) return;
 
         const cleanStart = newStartId.trim();
         const cleanEnd = newEndId.trim();
@@ -1095,7 +1125,7 @@
       } else {
         const currentId = entry.startStationId || (entry.start ? entry.start.code : '') || '';
         const newId = prompt(`Edit Station ID for ${entry.start?.name || 'Station'}:`, currentId);
-        if (newId === null) return; // User cancelled
+        if (newId === null) return;
 
         const cleanId = newId.trim();
         entry.startStationId = cleanId;
