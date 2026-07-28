@@ -569,7 +569,7 @@
           <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
         </div>
 
-        <!-- Universal Mobile/Desktop Export & Import Backup Buttons -->
+        <!-- Export & Import Backup Buttons with Prompt Location -->
         <button onclick="exportDataJSON()" class="fs-btn">⬇️ Export Backup (.json)</button>
         <label class="fs-btn" style="cursor: pointer; margin: 0;">
           ⬆️ Import Backup <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
@@ -1037,15 +1037,41 @@
       }
     }
 
-    // Universal Export Backup (Works on Mobile & Desktop)
-    function exportDataJSON() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries, null, 2));
+    // Export Backup with Save Location Prompt
+    async function exportDataJSON() {
+      const dataStr = JSON.stringify(entries, null, 2);
+
+      // 1. Try to open the Native "Save As" file picker if supported by the browser
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: 'japan_train_tracker_backup.json',
+            types: [{
+              description: 'JSON Backup File',
+              accept: { 'application/json': ['.json'] }
+            }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(dataStr);
+          await writable.close();
+          document.getElementById('file-status').textContent = `Backup saved as: ${handle.name}`;
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return; // User canceled the picker dialog
+          console.warn('File System Picker failed/unsupported, using standard download fallback:', err);
+        }
+      }
+
+      // 2. Fallback for browsers/mobile devices without showSaveFilePicker
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", "japan_train_tracker_backup.json");
+      downloadAnchor.href = url;
+      downloadAnchor.download = 'japan_train_tracker_backup.json';
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      URL.revokeObjectURL(url);
       document.getElementById('file-status').textContent = "Backup exported to Downloads!";
     }
 
