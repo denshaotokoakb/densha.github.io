@@ -77,7 +77,7 @@
       margin-top: 4px;
     }
 
-    /* File System Controls Bar */
+    /* File System & Backup Controls Bar */
     .file-system-bar {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -92,10 +92,11 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    .fs-buttons {
+    .fs-buttons-group {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .fs-btn {
@@ -108,6 +109,9 @@
       cursor: pointer;
       color: var(--jr-dark);
       transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .fs-btn:hover {
@@ -126,7 +130,7 @@
       background: var(--card-bg);
       border-radius: 8px;
       padding: 16px;
-      margin-bottom: 24px;
+      margin-top: 24px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
@@ -556,25 +560,22 @@
       <div class="subtitle">Log Single Stations or Start-to-End Journeys with Railway Lines & Individual Station Stamps</div>
     </header>
 
-    <!-- File System Access API Control Bar -->
-    <div class="file-system-bar" id="fsBarContainer" style="display: none;">
-      <div class="fs-buttons">
-        <button id="fs-save-btn" class="fs-btn">📁 Save to Local File</button>
-        <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
-      </div>
-      <span id="file-status">Using Browser Storage (localStorage)</span>
-    </div>
-
-    <!-- Interactive Leaflet Map -->
-    <div class="map-card">
-      <div class="map-header">
-        <h2>Route & Station Map</h2>
-        <div class="map-legend">
-          <div class="legend-item"><span class="legend-dot legend-green"></span> Start / Single Station</div>
-          <div class="legend-item"><span class="legend-dot legend-blue"></span> End Station</div>
+    <!-- File System Access API & Universal Backup Control Bar -->
+    <div class="file-system-bar" id="fsBarContainer">
+      <div class="fs-buttons-group">
+        <!-- Desktop File System API Buttons (hidden automatically on mobile) -->
+        <div id="desktopFsButtons" style="display: none; gap: 8px;">
+          <button id="fs-save-btn" class="fs-btn">📁 Save to Local File</button>
+          <button id="fs-load-btn" class="fs-btn">📂 Open Local File</button>
         </div>
+
+        <!-- Universal Mobile/Desktop Export & Import Backup Buttons -->
+        <button onclick="exportDataJSON()" class="fs-btn">⬇️ Export Backup (.json)</button>
+        <label class="fs-btn" style="cursor: pointer; margin: 0;">
+          ⬆️ Import Backup <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
+        </label>
       </div>
-      <div id="map"></div>
+      <span id="file-status">Initializing storage...</span>
     </div>
 
     <!-- Mode Selector Tabs -->
@@ -649,7 +650,7 @@
     </div>
 
     <!-- Dashboard -->
-    <div class="sections-grid">
+    <div class="sections-grid" style="margin-bottom: 24px;">
       <div class="section-column">
         <div class="section-title">
           <span>Planned Journeys & Wishlist Stations</span>
@@ -666,6 +667,18 @@
         <div class="station-list" id="visitedContainer"></div>
       </div>
     </div>
+
+    <!-- Interactive Leaflet Map (Moved to Bottom) -->
+    <div class="map-card">
+      <div class="map-header">
+        <h2>Route & Station Map</h2>
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-dot legend-green"></span> Start / Single Station</div>
+          <div class="legend-item"><span class="legend-dot legend-blue"></span> End Station</div>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
   </div>
 
   <!-- Leaflet JS -->
@@ -674,7 +687,7 @@
   <script>
     const STORAGE_KEY = 'japan_route_tracker_v13';
 
-    // Japanese Station Database[cite: 1]
+    // Japanese Station Database
     const JAPAN_STATION_DB = {
       "tokyo": {
         kanji: "東京駅", lat: 35.6812, lng: 139.7671, city: "Tokyo",
@@ -845,7 +858,7 @@
       }
     };
 
-    // Sample Entries[cite: 1]
+    // Sample Entries
     const DEFAULT_ENTRIES = [
       {
         id: 101,
@@ -893,7 +906,7 @@
       }
     ];
 
-    // State[cite: 1]
+    // State
     let rawEntries = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_ENTRIES;
     
     let entries = rawEntries.map(item => {
@@ -912,7 +925,7 @@
     let debounceTimer = null;
     let fileHandle = null;
 
-    // Leaflet Pins[cite: 1]
+    // Leaflet Pins
     const greenIcon = new L.Icon({
       iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -931,7 +944,7 @@
       shadowSize: [41, 41]
     });
 
-    // Map Setup[cite: 1]
+    // Map Setup
     const map = L.map('map').setView([35.6812, 139.7671], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
@@ -940,7 +953,7 @@
 
     let mapLayerGroup = L.layerGroup().addTo(map);
 
-    // Form elements[cite: 1]
+    // Form elements
     const form = document.getElementById('trackerForm');
     const startInput = document.getElementById('startStationInput');
     const endInput = document.getElementById('endStationInput');
@@ -965,7 +978,7 @@
     const endStampLabel = document.getElementById('endStampLabel');
     const endStampPhotoInput = document.getElementById('endStampPhotoInput');
 
-    // File System Access API Integration Functions
+    // File System Access API & Universal Backup Integration Functions
     async function saveToFileSystem() {
       try {
         if (!fileHandle) {
@@ -983,7 +996,7 @@
         await writable.write(JSON.stringify(entries, null, 2));
         await writable.close();
 
-        document.getElementById('file-status').textContent = `Saved to: ${fileHandle.name}`;
+        document.getElementById('file-status').textContent = `Saved to file: ${fileHandle.name}`;
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error("Error saving file:", err);
@@ -1008,19 +1021,15 @@
         
         let loaded = JSON.parse(contents);
         entries = loaded.map(item => {
-          if (item.startStampCollected === undefined) {
-            item.startStampCollected = !!item.stampCollected;
-          }
-          if (item.endStampCollected === undefined) {
-            item.endStampCollected = !!item.stampCollected;
-          }
+          if (item.startStampCollected === undefined) item.startStampCollected = !!item.stampCollected;
+          if (item.endStampCollected === undefined) item.endStampCollected = !!item.stampCollected;
           return item;
         });
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
         render();
 
-        document.getElementById('file-status').textContent = `Loaded: ${fileHandle.name}`;
+        document.getElementById('file-status').textContent = `Loaded file: ${fileHandle.name}`;
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error("Error loading file:", err);
@@ -1028,15 +1037,54 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const saveBtn = document.getElementById('fs-save-btn');
-      const loadBtn = document.getElementById('fs-load-btn');
-      const fsBarContainer = document.getElementById('fsBarContainer');
+    // Universal Export Backup (Works on Mobile & Desktop)
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(entries, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "japan_train_tracker_backup.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      document.getElementById('file-status').textContent = "Backup exported to Downloads!";
+    }
 
+    // Universal Import Backup (Works on Mobile & Desktop)
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const loaded = JSON.parse(e.target.result);
+          entries = loaded.map(item => {
+            if (item.startStampCollected === undefined) item.startStampCollected = !!item.stampCollected;
+            if (item.endStampCollected === undefined) item.endStampCollected = !!item.stampCollected;
+            return item;
+          });
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+          render();
+          document.getElementById('file-status').textContent = `Loaded backup: ${file.name}`;
+          alert("Data successfully imported!");
+        } catch (err) {
+          console.error("Invalid JSON file", err);
+          alert("Could not read file. Make sure it's a valid JSON backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const desktopFsButtons = document.getElementById('desktopFsButtons');
       if ('showSaveFilePicker' in window) {
-        fsBarContainer.style.display = 'flex';
-        saveBtn.addEventListener('click', saveToFileSystem);
-        loadBtn.addEventListener('click', loadFromFileSystem);
+        desktopFsButtons.style.display = 'flex';
+        document.getElementById('fs-save-btn').addEventListener('click', saveToFileSystem);
+        document.getElementById('fs-load-btn').addEventListener('click', loadFromFileSystem);
+        document.getElementById('file-status').textContent = "Using File System API & Local Storage";
+      } else {
+        document.getElementById('file-status').textContent = "Using Mobile Browser Storage & Backups";
       }
     });
 
@@ -1423,7 +1471,7 @@
       if (fileHandle) { saveToFileSystem(); }
     }
 
-    // Save Entry Form Submission[cite: 1]
+    // Save Entry Form Submission
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -1533,7 +1581,7 @@
       }
     }
 
-    // Map Render[cite: 1]
+    // Map Render
     function updateMap() {
       mapLayerGroup.clearLayers();
       const bounds = [];
@@ -1565,7 +1613,7 @@
       }
     }
 
-    // Render Dashboard Lists[cite: 1]
+    // Render Dashboard Lists
     function render() {
       const wishlistContainer = document.getElementById('wishlistContainer');
       const visitedContainer = document.getElementById('visitedContainer');
@@ -1701,7 +1749,7 @@
       return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // Initial Setup[cite: 1]
+    // Initial Setup
     setMode('single');
     render();
   </script>
