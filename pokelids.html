@@ -105,7 +105,7 @@
             background-color: #fff;
         }
         .stats {
-            margin: 20px 0;
+            margin: 0 0 15px 0;
             font-weight: bold;
             color: var(--secondary-color);
             display: flex;
@@ -256,7 +256,7 @@
         </select>
     </div>
 
-    <!-- Collapsible Automatic Loading Status Box Moved Under Filters -->
+    <!-- Collapsible Automatic Loading Status Box -->
     <details class="import-box" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3; text-align: left; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;">
         <summary style="cursor: pointer; font-weight: 600; font-size: 0.9rem; outline: none;">📂 Loading Status & Info (Click to expand/collapse)</summary>
         <div style="margin-top: 10px; text-align: center; border-top: 1px solid #c7d2fe; padding-top: 10px;">
@@ -265,12 +265,17 @@
         </div>
     </details>
     
-    <div class="stats">
-        <span id="statsCounter">Loading lids.kml...</span>
-        <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
-    </div>
-
-    <div class="grid" id="lidGrid"></div>
+    <!-- Collapsible PokéLids List & Checklist Area -->
+    <details class="import-box" open style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; outline: none; color: var(--secondary-color);">🗺️ PokéLids List & Checklist (Click to expand/collapse)</summary>
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <div class="stats">
+                <span id="statsCounter">Loading lids.kml...</span>
+                <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
+            </div>
+            <div class="grid" id="lidGrid"></div>
+        </div>
+    </details>
 
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
