@@ -244,11 +244,6 @@
         <h1>Japan Poké Lids Directory</h1>
     </header>
 
-    <div class="import-box" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3;">
-        <p style="margin: 0; font-size: 0.9rem;">Automatically loading <strong>lids.kml</strong> from directory...</p>
-        <span id="importStatus" style="display:block; margin-top: 5px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
-    </div>
-
     <!-- Interactive In-Browser Map Container -->
     <div id="mapContainer">
         <div id="map"></div>
@@ -260,6 +255,15 @@
             <option value="">All Prefectures</option>
         </select>
     </div>
+
+    <!-- Collapsible Automatic Loading Status Box Moved Under Filters -->
+    <details class="import-box" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3; text-align: left; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 0.9rem; outline: none;">📂 Loading Status & Info (Click to expand/collapse)</summary>
+        <div style="margin-top: 10px; text-align: center; border-top: 1px solid #c7d2fe; padding-top: 10px;">
+            <p style="margin: 0; font-size: 0.9rem;">Automatically loading <strong>lids.kml</strong> from directory...</p>
+            <span id="importStatus" style="display:block; margin-top: 5px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
+        </div>
+    </details>
     
     <div class="stats">
         <span id="statsCounter">Loading lids.kml...</span>
