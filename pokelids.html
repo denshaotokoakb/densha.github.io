@@ -288,11 +288,12 @@
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
         <strong>Data Management</strong>
-        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Save your progress or load a previously saved progress file.</p>
+        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Open your JSON progress file to link it for direct saving, or use traditional import/export.</p>
         <div class="btn-group">
             <button class="fs-btn" onclick="saveProgressToFile()">💾 Save Progress</button>
-            <label class="import-btn" style="background-color: #17a2b8;">
-                📂 Load Progress
+            <button class="fs-btn" style="background-color: #17a2b8;" onclick="openProgressFile()">📂 Open & Link JSON</button>
+            <label class="import-btn" style="background-color: #6c757d; display: none;">
+                Fallback Load
                 <input type="file" id="jsonFileInput" accept=".json">
             </label>
         </div>
@@ -841,6 +842,7 @@
 
     let pokelids = [];
     let savedState = JSON.parse(localStorage.getItem('pokelids_sorted_kml_state') || '{}');
+    let loadedFileHandle = null;
     let map = null;
     let markers = [];
 
@@ -941,7 +943,6 @@
 
                 let imageUrl = '';
                 
-                // 1. Check gx:media or media namespace
                 const gxMediaElements = pm.getElementsByTagNameNS("*", "media");
                 if (gxMediaElements.length > 0) {
                     imageUrl = gxMediaElements[0].textContent?.trim();
@@ -951,7 +952,6 @@
                     if (directGx) imageUrl = directGx.textContent?.trim();
                 }
 
-                // 2. Check ExtendedData
                 if (!imageUrl) {
                     const extendedDatas = pm.getElementsByTagName("ExtendedData");
                     if (extendedDatas.length > 0) {
@@ -970,7 +970,6 @@
                     }
                 }
 
-                // 3. Robust Description HTML / Entity-encoded HTML Parsing
                 if (!imageUrl && description) {
                     let decodedDesc = description;
                     if (description.includes('&lt;') || description.includes('&amp;')) {
@@ -1014,6 +1013,39 @@
         }
     }
 
+    async function openProgressFile() {
+        try {
+            if (!window.showOpenFilePicker) {
+                document.getElementById('jsonFileInput').click();
+                return;
+            }
+            const [fileHandle] = await window.showOpenFilePicker({
+                types: [{
+                    description: 'JSON Files',
+                    accept: { 'application/json': ['.json'] }
+                }],
+                multiple: false
+            });
+            loadedFileHandle = fileHandle;
+            const file = await fileHandle.getFile();
+            const text = await file.text();
+            
+            const visitedState = JSON.parse(text);
+            savedState = visitedState;
+            pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
+            saveStateToStorage();
+            applyFilters();
+            document.getElementById('importStatus').textContent = `Progress loaded from ${file.name} (Linked for direct saving)!`;
+            document.getElementById('importStatus').style.color = '#155724';
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error("File System Access error:", err);
+                document.getElementById('importStatus').textContent = 'Error opening progress file.';
+                document.getElementById('importStatus').style.color = 'red';
+            }
+        }
+    }
+
     document.getElementById('jsonFileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1037,7 +1069,63 @@
         reader.readAsText(file);
     });
 
-    // Automatically load lids.kml from the same directory on page load
+    async function saveProgressToFile() {
+        const visitedState = {};
+        pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
+        const content = JSON.stringify(visitedState, null, 2);
+
+        try {
+            if (loadedFileHandle) {
+                const options = { mode: 'readwrite' };
+                if ((await loadedFileHandle.queryPermission(options)) !== 'granted') {
+                    if ((await loadedFileHandle.requestPermission(options)) !== 'granted') {
+                        throw new Error('Permission denied to write to file');
+                    }
+                }
+                const writable = await loadedFileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+                document.getElementById('importStatus').textContent = 'Progress successfully saved to the linked file!';
+                document.getElementById('importStatus').style.color = '#155724';
+                return;
+            }
+
+            if (window.showSaveFilePicker) {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'pokelids-progress.json',
+                    types: [{
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] }
+                    }]
+                });
+                loadedFileHandle = handle;
+                const writable = await handle.createWritable();
+                await writable.write(content);
+                await writable.close();
+                document.getElementById('importStatus').textContent = 'Progress saved and file linked for future direct saves!';
+                document.getElementById('importStatus').style.color = '#155724';
+                return;
+            }
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(content);
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "pokelids-progress.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            
+            document.getElementById('importStatus').textContent = 'Progress downloaded (Browser does not support direct file overwriting).';
+            document.getElementById('importStatus').style.color = '#856404';
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error("Save error:", err);
+                document.getElementById('importStatus').textContent = 'Error saving progress file: ' + err.message;
+                document.getElementById('importStatus').style.color = 'red';
+            }
+        }
+    }
+
     function autoLoadKML() {
         fetch('lids.kml')
             .then(response => {
@@ -1066,22 +1154,6 @@
             opt.textContent = pref;
             select.appendChild(opt);
         });
-    }
-
-    function saveProgressToFile() {
-        const visitedState = {};
-        pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
-        
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(visitedState, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "pokelids-progress.json");
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-        
-        document.getElementById('importStatus').textContent = 'Progress successfully downloaded as pokelids-progress.json!';
-        document.getElementById('importStatus').style.color = '#155724';
     }
 
     const gridEl = document.getElementById('lidGrid');
@@ -1140,7 +1212,6 @@
         const selectedPref = document.getElementById('prefectureFilter').value;
         const lidDetails = document.getElementById('lidDetails');
         
-        // Automatically open the section if the user is typing in the search bar or choosing a prefecture
         if (query !== "" || selectedPref !== "") {
             lidDetails.open = true;
         }
@@ -1180,7 +1251,6 @@
 
     searchInput.addEventListener('input', applyFilters);
 
-    // Trigger automatic load on startup
     window.addEventListener('DOMContentLoaded', autoLoadKML);
 </script>
 </body>
