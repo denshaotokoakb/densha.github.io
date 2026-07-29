@@ -244,21 +244,9 @@
         <h1>Japan Poké Lids Directory</h1>
     </header>
 
-    <div class="import-box">
-        <strong>Data Management</strong>
-        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Automatically loading <strong>lids.kml</strong> from directory, or upload manually below.</p>
-        <div class="btn-group">
-            <label class="import-btn">
-                📁 Upload KML
-                <input type="file" id="kmlFileInput" accept=".kml,.xml">
-            </label>
-            <button class="fs-btn" onclick="saveProgressToFile()">💾 Save Progress</button>
-            <label class="import-btn" style="background-color: #17a2b8;">
-                📂 Load JSON Progress
-                <input type="file" id="jsonFileInput" accept=".json">
-            </label>
-        </div>
-        <span id="importStatus" style="display:block; margin-top: 8px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
+    <div class="import-box" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3;">
+        <p style="margin: 0; font-size: 0.9rem;">Automatically loading <strong>lids.kml</strong> from directory...</p>
+        <span id="importStatus" style="display:block; margin-top: 5px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
     </div>
 
     <!-- Interactive In-Browser Map Container -->
@@ -279,6 +267,19 @@
     </div>
 
     <div class="grid" id="lidGrid"></div>
+
+    <!-- Bottom Data Management Section -->
+    <div class="import-box" style="margin-top: 35px;">
+        <strong>Data Management</strong>
+        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Save your progress or load a previously saved progress file.</p>
+        <div class="btn-group">
+            <button class="fs-btn" onclick="saveProgressToFile()">💾 Save Progress</button>
+            <label class="import-btn" style="background-color: #17a2b8;">
+                📂 Load Progress
+                <input type="file" id="jsonFileInput" accept=".json">
+            </label>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -949,7 +950,7 @@
             initMap();
             setTimeout(() => { map.invalidateSize(); }, 100);
 
-            document.getElementById('importStatus').textContent = `Success! Loaded and sorted ${pokelids.length} PokéLids.`;
+            document.getElementById('importStatus').textContent = `Success! Automatically loaded and sorted ${pokelids.length} PokéLids from lids.kml.`;
             applyFilters();
 
         } catch (error) {
@@ -958,17 +959,6 @@
             document.getElementById('importStatus').style.color = "red";
         }
     }
-
-    document.getElementById('kmlFileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            processKMLContent(event.target.result);
-        };
-        reader.readAsText(file);
-    });
 
     document.getElementById('jsonFileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -1004,8 +994,10 @@
                 processKMLContent(text);
             })
             .catch(error => {
-                console.warn('Auto-load notice: lids.kml could not be fetched automatically (often due to browser file:// protocol security restrictions). Please upload it manually using the button above.', error);
-                document.getElementById('statsCounter').innerText = "lids.kml not auto-loaded. Please upload your KML file above.";
+                console.warn('Auto-load notice: lids.kml could not be fetched automatically (often due to browser file:// protocol security restrictions). Make sure you are running via a local server (http://localhost).', error);
+                document.getElementById('statsCounter').innerText = "lids.kml not auto-loaded (run via local dev server).";
+                document.getElementById('importStatus').textContent = "Notice: lids.kml could not be auto-loaded. Please view through a local server (http://localhost).";
+                document.getElementById('importStatus').style.color = "#856404";
             });
     }
 
