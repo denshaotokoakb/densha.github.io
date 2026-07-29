@@ -166,6 +166,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: opacity 0.2s ease-in-out;
+            background-color: #f8f9fa;
+        }
+        .thumbnail-container img.img-fallback {
+            object-fit: contain;
+            padding: 20px;
+            opacity: 0.5;
         }
         .pokeball-id {
             position: absolute;
@@ -733,6 +740,17 @@
         return /^[\u30A0-\u30FF]+$/.test(str);
     }
 
+    function decodeHtmlEntities(url) {
+        if (!url) return '';
+        const txt = document.createElement('textarea');
+        txt.innerHTML = url;
+        let decoded = txt.value.trim();
+        if (decoded.startsWith('http://')) {
+            decoded = 'https://' + decoded.substring(7);
+        }
+        return decoded;
+    }
+
     function parseLocationName(rawName) {
         if (!rawName) return { prefecture: "Other", englishName: "Unknown Location" };
         
@@ -826,8 +844,8 @@
     function initMap() {
         if (!map && document.getElementById('map')) {
             const japanBounds = L.latLngBounds(
-                [15.0, 118.0], // South-West (expanded slightly to allow slightly further zoom out)
-                [50.0, 158.0]  // North-East (expanded slightly to allow slightly further zoom out)
+                [15.0, 118.0], // South-West
+                [50.0, 158.0]  // North-East
             );
 
             map = L.map('map', {
@@ -858,7 +876,7 @@
 
             const contentString = `
                 <div style="text-align: center; min-width: 160px; max-width: 200px;">
-                    <img src="${lid.imageUrl}" alt="${lid.englishName}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.src='https://via.placeholder.com/150?text=Pok%C3%A9Lid+%23${lid.id}'">
+                    <img src="${lid.imageUrl}" alt="${lid.englishName}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ccc\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'; this.classList.add('img-fallback');">
                     <b style="font-size: 0.9rem;">#${lid.id} - ${lid.englishName}</b><br>
                     <span style="font-size: 0.80rem; color: #666;">${lid.prefecture}</span><br>
                     <div style="margin-top: 6px;">
@@ -948,6 +966,8 @@
                     const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
                     if (imgMatch) imageUrl = imgMatch[1];
                 }
+
+                imageUrl = decodeHtmlEntities(imageUrl);
 
                 pokelids.push({
                     id: officialId,
@@ -1071,7 +1091,7 @@
                     <h3>${lid.englishName}</h3>
                     <div class="thumbnail-container">
                         <span class="pokeball-id">#${lid.id}</span>
-                        <img src="${lid.imageUrl}" alt="${lid.englishName}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x200?text=Pok%C3%A9Lid+%23${lid.id}'">
+                        <img src="${lid.imageUrl}" alt="${lid.englishName}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ccc\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'; this.classList.add('img-fallback');">
                     </div>
                     <div class="location-container">
                         <button class="map-link" onclick="focusOnMap(${lid.lat}, ${lid.lng})">🗺️ View on Map</button>
