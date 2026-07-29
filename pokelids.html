@@ -265,17 +265,15 @@
         </div>
     </details>
     
-    <!-- Collapsible PokéLids List & Checklist Area -->
-    <details class="import-box" open style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-        <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; outline: none; color: var(--secondary-color);">🗺️ PokéLids List & Checklist (Click to expand/collapse)</summary>
-        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-            <div class="stats">
-                <span id="statsCounter">Loading lids.kml...</span>
-                <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
-            </div>
-            <div class="grid" id="lidGrid"></div>
+    <!-- PokéLids List & Checklist Area (Non-collapsible) -->
+    <div class="import-box" style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+        <div style="font-weight: 600; font-size: 1rem; color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">🗺️ PokéLids List & Checklist</div>
+        <div class="stats">
+            <span id="statsCounter">Loading lids.kml...</span>
+            <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
         </div>
-    </details>
+        <div class="grid" id="lidGrid"></div>
+    </div>
 
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
@@ -828,12 +826,12 @@
     function initMap() {
         if (!map && document.getElementById('map')) {
             const japanBounds = L.latLngBounds(
-                [20.0, 122.0], // South-West
-                [46.0, 154.0]  // North-East
+                [15.0, 118.0], // South-West (expanded slightly to allow slightly further zoom out)
+                [50.0, 158.0]  // North-East (expanded slightly to allow slightly further zoom out)
             );
 
             map = L.map('map', {
-                minZoom: 5,
+                minZoom: 4,
                 maxBounds: japanBounds,
                 maxBoundsViscosity: 1.0
             }).setView([36.2048, 138.2529], 5);
