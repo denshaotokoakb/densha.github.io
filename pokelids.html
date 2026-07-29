@@ -118,6 +118,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
+            margin-top: 15px;
         }
         .card {
             background: var(--card-bg);
@@ -272,15 +273,17 @@
         </div>
     </details>
     
-    <!-- PokéLids List & Checklist Area (Non-collapsible) -->
-    <div class="import-box" style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-        <div style="font-weight: 600; font-size: 1rem; color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">🗺️ PokéLids List & Checklist</div>
-        <div class="stats">
-            <span id="statsCounter">Loading lids.kml...</span>
-            <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
+    <!-- PokéLids List & Checklist Area (Collapsible by default, auto-opens on search/filter) -->
+    <details id="lidDetails" class="import-box" style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+        <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; color: var(--secondary-color); outline: none;">🗺️ PokéLids List & Checklist (Click to expand/collapse)</summary>
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <div class="stats">
+                <span id="statsCounter">Loading lids.kml...</span>
+                <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
+            </div>
+            <div class="grid" id="lidGrid"></div>
         </div>
-        <div class="grid" id="lidGrid"></div>
-    </div>
+    </details>
 
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
@@ -1135,6 +1138,12 @@
     function applyFilters() {
         const query = searchInput.value.toLowerCase().trim();
         const selectedPref = document.getElementById('prefectureFilter').value;
+        const lidDetails = document.getElementById('lidDetails');
+        
+        // Automatically open the section if the user is typing in the search bar or choosing a prefecture
+        if (query !== "" || selectedPref !== "") {
+            lidDetails.open = true;
+        }
         
         const filtered = pokelids.filter(lid => {
             const matchesQuery = lid.englishName.toLowerCase().includes(query) || 
