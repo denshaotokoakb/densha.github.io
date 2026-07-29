@@ -246,7 +246,7 @@
 
     <div class="import-box">
         <strong>Data Management</strong>
-        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Upload your KML file to populate the interactive map and directory.</p>
+        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Automatically loading <strong>lids.kml</strong> from directory, or upload manually below.</p>
         <div class="btn-group">
             <label class="import-btn">
                 📁 Upload File
@@ -271,7 +271,7 @@
     </div>
     
     <div class="stats">
-        <span id="statsCounter">No data loaded. Please upload your KML file above.</span>
+        <span id="statsCounter">Loading lids.kml...</span>
         <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
     </div>
 
@@ -839,7 +839,7 @@
                 <div style="text-align: center; min-width: 160px; max-width: 200px;">
                     <img src="${lid.imageUrl}" alt="${lid.englishName}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.src='https://via.placeholder.com/150?text=Pok%C3%A9Lid+%23${lid.id}'">
                     <b style="font-size: 0.9rem;">#${lid.id} - ${lid.englishName}</b><br>
-                    <span style="font-size: 0.8rem; color: #666;">${lid.prefecture}</span><br>
+                    <span style="font-size: 0.80rem; color: #666;">${lid.prefecture}</span><br>
                     <div style="margin-top: 6px;">
                         <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="toggleVisited(${lid.id})">
                         <label for="map-visit-${lid.id}" style="font-size: 0.85rem;">Collected</label>
@@ -865,103 +865,123 @@
         }
     }
 
+    function processKMLContent(xmlText) {
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const placemarks = xmlDoc.getElementsByTagName("Placemark");
+
+            pokelids = [];
+
+            for (let i = 0; i < placemarks.length; i++) {
+                const pm = placemarks[i];
+                const point = pm.getElementsByTagName("Point")[0];
+                if (!point) continue;
+
+                const coordsText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
+                if (!coordsText) continue;
+
+                const parts = coordsText.split(',');
+                const lng = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
+
+                const nameNode = pm.getElementsByTagName("name")[0];
+                const rawName = nameNode ? nameNode.textContent.trim() : `PokéLid`;
+                const locationInfo = parseLocationName(rawName);
+
+                const description = pm.getElementsByTagName("description")[0]?.textContent?.trim() || "";
+
+                let officialId = i + 1;
+                const descMatch = description.match(/\/desc\/(\d+)\//i);
+                if (descMatch && descMatch[1]) {
+                    officialId = parseInt(descMatch[1], 10);
+                }
+
+                let imageUrl = '';
+                const gxMediaElements = pm.getElementsByTagNameNS("*", "media");
+                if (gxMediaElements.length > 0) {
+                    imageUrl = gxMediaElements[0].textContent?.trim();
+                }
+                if (!imageUrl) {
+                    const directGx = pm.getElementsByTagName("gx:media")[0];
+                    if (directGx) imageUrl = directGx.textContent?.trim();
+                }
+                if (!imageUrl) {
+                    const extendedDatas = pm.getElementsByTagName("ExtendedData");
+                    if (extendedDatas.length > 0) {
+                        const nodes = extendedDatas[0].querySelectorAll("Data, SimpleData");
+                        for (let d = 0; d < nodes.length; d++) {
+                            const nameAttr = (nodes[d].getAttribute("name") || "").toLowerCase();
+                            if (nameAttr.includes("media") || nameAttr.includes("gx") || nameAttr.includes("img") || nameAttr.includes("thumbnail")) {
+                                const valNode = nodes[d].getElementsByTagName("value")[0];
+                                const valText = (valNode ? valNode.textContent : nodes[d].textContent)?.trim();
+                                if (valText && valText.startsWith("http")) {
+                                    imageUrl = valText;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!imageUrl) {
+                    const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (imgMatch) imageUrl = imgMatch[1];
+                }
+
+                pokelids.push({
+                    id: officialId,
+                    name: rawName,
+                    englishName: locationInfo.englishName,
+                    prefecture: locationInfo.prefecture,
+                    lat: lat,
+                    lng: lng,
+                    imageUrl: imageUrl || `https://via.placeholder.com/300x200?text=${encodeURIComponent(locationInfo.englishName)}`,
+                    visited: !!savedState[officialId]
+                });
+            }
+
+            pokelids.sort((a, b) => a.id - b.id);
+            populatePrefectureFilter();
+            document.getElementById('mapContainer').style.display = 'block';
+            initMap();
+            setTimeout(() => { map.invalidateSize(); }, 100);
+
+            document.getElementById('importStatus').textContent = `Success! Loaded and sorted ${pokelids.length} PokéLids.`;
+            applyFilters();
+
+        } catch (error) {
+            console.error("KML Parsing Error:", error);
+            document.getElementById('importStatus').textContent = "Error parsing KML content. Please check console.";
+            document.getElementById('importStatus').style.color = "red";
+        }
+    }
+
     document.getElementById('kmlFileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            try {
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(event.target.result, "text/xml");
-                const placemarks = xmlDoc.getElementsByTagName("Placemark");
-
-                pokelids = [];
-
-                for (let i = 0; i < placemarks.length; i++) {
-                    const pm = placemarks[i];
-                    const point = pm.getElementsByTagName("Point")[0];
-                    if (!point) continue;
-
-                    const coordsText = point.getElementsByTagName("coordinates")[0]?.textContent?.trim();
-                    if (!coordsText) continue;
-
-                    const parts = coordsText.split(',');
-                    const lng = parseFloat(parts[0]);
-                    const lat = parseFloat(parts[1]);
-
-                    const nameNode = pm.getElementsByTagName("name")[0];
-                    const rawName = nameNode ? nameNode.textContent.trim() : `PokéLid`;
-                    const locationInfo = parseLocationName(rawName);
-
-                    const description = pm.getElementsByTagName("description")[0]?.textContent?.trim() || "";
-
-                    let officialId = i + 1;
-                    const descMatch = description.match(/\/desc\/(\d+)\//i);
-                    if (descMatch && descMatch[1]) {
-                        officialId = parseInt(descMatch[1], 10);
-                    }
-
-                    let imageUrl = '';
-                    const gxMediaElements = pm.getElementsByTagNameNS("*", "media");
-                    if (gxMediaElements.length > 0) {
-                        imageUrl = gxMediaElements[0].textContent?.trim();
-                    }
-                    if (!imageUrl) {
-                        const directGx = pm.getElementsByTagName("gx:media")[0];
-                        if (directGx) imageUrl = directGx.textContent?.trim();
-                    }
-                    if (!imageUrl) {
-                        const extendedDatas = pm.getElementsByTagName("ExtendedData");
-                        if (extendedDatas.length > 0) {
-                            const nodes = extendedDatas[0].querySelectorAll("Data, SimpleData");
-                            for (let d = 0; d < nodes.length; d++) {
-                                const nameAttr = (nodes[d].getAttribute("name") || "").toLowerCase();
-                                if (nameAttr.includes("media") || nameAttr.includes("gx") || nameAttr.includes("img") || nameAttr.includes("thumbnail")) {
-                                    const valNode = nodes[d].getElementsByTagName("value")[0];
-                                    const valText = (valNode ? valNode.textContent : nodes[d].textContent)?.trim();
-                                    if (valText && valText.startsWith("http")) {
-                                        imageUrl = valText;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (!imageUrl) {
-                        const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                        if (imgMatch) imageUrl = imgMatch[1];
-                    }
-
-                    pokelids.push({
-                        id: officialId,
-                        name: rawName,
-                        englishName: locationInfo.englishName,
-                        prefecture: locationInfo.prefecture,
-                        lat: lat,
-                        lng: lng,
-                        imageUrl: imageUrl || `https://via.placeholder.com/300x200?text=${encodeURIComponent(locationInfo.englishName)}`,
-                        visited: !!savedState[officialId]
-                    });
-                }
-
-                pokelids.sort((a, b) => a.id - b.id);
-                populatePrefectureFilter();
-                document.getElementById('mapContainer').style.display = 'block';
-                initMap();
-                setTimeout(() => { map.invalidateSize(); }, 100);
-
-                document.getElementById('importStatus').textContent = `Success! Loaded and sorted ${pokelids.length} PokéLids.`;
-                applyFilters();
-
-            } catch (error) {
-                console.error("KML Parsing Error:", error);
-                document.getElementById('importStatus').textContent = "Error parsing KML file. Please check console.";
-                document.getElementById('importStatus').style.color = "red";
-            }
+            processKMLContent(event.target.result);
         };
         reader.readAsText(file);
     });
+
+    // Automatically load lids.kml from the same directory on page load
+    function autoLoadKML() {
+        fetch('lids.kml')
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to load lids.kml automatically');
+                return response.text();
+            })
+            .then(text => {
+                processKMLContent(text);
+            })
+            .catch(error => {
+                console.warn('Auto-load notice: lids.kml could not be fetched automatically (often due to browser file:// protocol security restrictions). Please upload it manually using the button above.', error);
+                document.getElementById('statsCounter').innerText = "lids.kml not auto-loaded. Please upload your KML file above.";
+            });
+    }
 
     function populatePrefectureFilter() {
         const select = document.getElementById('prefectureFilter');
@@ -1124,6 +1144,9 @@
     }
 
     searchInput.addEventListener('input', applyFilters);
+
+    // Trigger automatic load on startup
+    window.addEventListener('DOMContentLoaded', autoLoadKML);
 </script>
 </body>
 </html>
