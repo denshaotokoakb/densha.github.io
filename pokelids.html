@@ -249,11 +249,14 @@
         <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Automatically loading <strong>lids.kml</strong> from directory, or upload manually below.</p>
         <div class="btn-group">
             <label class="import-btn">
-                📁 Upload File
+                📁 Upload KML
                 <input type="file" id="kmlFileInput" accept=".kml,.xml">
             </label>
             <button class="fs-btn" onclick="saveProgressToFile()">💾 Save Progress</button>
-            <button class="fs-btn" onclick="loadProgressFromFile()" style="background-color: #17a2b8;">📂 Load Progress</button>
+            <label class="import-btn" style="background-color: #17a2b8;">
+                📂 Load JSON Progress
+                <input type="file" id="jsonFileInput" accept=".json">
+            </label>
         </div>
         <span id="importStatus" style="display:block; margin-top: 8px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
     </div>
@@ -967,6 +970,29 @@
         reader.readAsText(file);
     });
 
+    document.getElementById('jsonFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const visitedState = JSON.parse(event.target.result);
+                savedState = visitedState;
+                pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
+                saveStateToStorage();
+                applyFilters();
+                document.getElementById('importStatus').textContent = 'Progress successfully loaded from JSON file!';
+                document.getElementById('importStatus').style.color = '#155724';
+            } catch (err) {
+                console.error("JSON Parsing Error:", err);
+                document.getElementById('importStatus').textContent = 'Error parsing JSON progress file.';
+                document.getElementById('importStatus').style.color = 'red';
+            }
+        };
+        reader.readAsText(file);
+    });
+
     // Automatically load lids.kml from the same directory on page load
     function autoLoadKML() {
         fetch('lids.kml')
@@ -996,48 +1022,20 @@
         });
     }
 
-    async function saveProgressToFile() {
-        if (!('showSaveFilePicker' in window)) {
-            alert('File System Access API is not supported in this browser.');
-            return;
-        }
-        try {
-            const visitedState = {};
-            pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
-            const handle = await window.showSaveFilePicker({
-                suggestedName: 'pokelids-progress.json',
-                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(JSON.stringify(visitedState, null, 2));
-            await writable.close();
-            document.getElementById('importStatus').textContent = 'Progress successfully saved to file!';
-        } catch (err) {
-            if (err.name !== 'AbortError') console.error(err);
-        }
-    }
-
-    async function loadProgressFromFile() {
-        if (!('showOpenFilePicker' in window)) {
-            alert('File System Access API is not supported in this browser.');
-            return;
-        }
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
-            });
-            const file = await handle.getFile();
-            const text = await file.text();
-            const visitedState = JSON.parse(text);
-            
-            savedState = visitedState;
-            pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
-            saveStateToStorage();
-            applyFilters();
-            document.getElementById('importStatus').textContent = 'Progress successfully loaded from file!';
-        } catch (err) {
-            if (err.name !== 'AbortError') console.error(err);
-        }
+    function saveProgressToFile() {
+        const visitedState = {};
+        pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
+        
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(visitedState, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "pokelids-progress.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        
+        document.getElementById('importStatus').textContent = 'Progress successfully downloaded as pokelids-progress.json!';
+        document.getElementById('importStatus').style.color = '#155724';
     }
 
     const gridEl = document.getElementById('lidGrid');
