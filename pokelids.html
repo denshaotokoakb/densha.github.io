@@ -827,7 +827,17 @@
 
     function initMap() {
         if (!map && document.getElementById('map')) {
-            map = L.map('map').setView([36.2048, 138.2529], 5);
+            const japanBounds = L.latLngBounds(
+                [20.0, 122.0], // South-West
+                [46.0, 154.0]  // North-East
+            );
+
+            map = L.map('map', {
+                minZoom: 5,
+                maxBounds: japanBounds,
+                maxBoundsViscosity: 1.0
+            }).setView([36.2048, 138.2529], 5);
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
