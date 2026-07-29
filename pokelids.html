@@ -273,7 +273,7 @@
         </div>
     </details>
     
-    <!-- PokéLids List & Checklist Area (Collapsible by default, auto-opens on search/filter) -->
+    <!-- PokéLids List & Checklist Area -->
     <details id="lidDetails" class="import-box" style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
         <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; color: var(--secondary-color); outline: none;">🗺️ PokéLids List & Checklist (Click to expand/collapse)</summary>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
@@ -288,12 +288,12 @@
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
         <strong>Data Management</strong>
-        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Open your JSON progress file to link it for direct saving, or use traditional import/export.</p>
+        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Open your JSON progress file to link it for direct saving (Chrome/Edge), or use traditional import/export.</p>
         <div class="btn-group">
             <button class="fs-btn" onclick="saveProgressToFile()">💾 Save Progress</button>
             <button class="fs-btn" style="background-color: #17a2b8;" onclick="openProgressFile()">📂 Open & Link JSON</button>
-            <label class="import-btn" style="background-color: #6c757d; display: none;">
-                Fallback Load
+            <label class="import-btn" style="background-color: #6c757d;">
+                Fallback Load File
                 <input type="file" id="jsonFileInput" accept=".json">
             </label>
         </div>
@@ -849,8 +849,8 @@
     function initMap() {
         if (!map && document.getElementById('map')) {
             const japanBounds = L.latLngBounds(
-                [15.0, 118.0], // South-West
-                [50.0, 158.0]  // North-East
+                [15.0, 118.0],
+                [50.0, 158.0]
             );
 
             map = L.map('map', {
@@ -942,7 +942,6 @@
                 }
 
                 let imageUrl = '';
-                
                 const gxMediaElements = pm.getElementsByTagNameNS("*", "media");
                 if (gxMediaElements.length > 0) {
                     imageUrl = gxMediaElements[0].textContent?.trim();
@@ -1003,12 +1002,12 @@
             initMap();
             setTimeout(() => { map.invalidateSize(); }, 100);
 
-            document.getElementById('importStatus').textContent = `Success! Automatically loaded and sorted ${pokelids.length} PokéLids from lids.kml.`;
+            document.getElementById('importStatus').textContent = `Success! Loaded and sorted ${pokelids.length} PokéLids from lids.kml.`;
             applyFilters();
 
         } catch (error) {
             console.error("KML Parsing Error:", error);
-            document.getElementById('importStatus').textContent = "Error parsing KML content. Please check console.";
+            document.getElementById('importStatus').textContent = "Error parsing KML content.";
             document.getElementById('importStatus').style.color = "red";
         }
     }
@@ -1016,6 +1015,7 @@
     async function openProgressFile() {
         try {
             if (!window.showOpenFilePicker) {
+                alert("Your browser does not support direct file linking. Please use the 'Fallback Load File' button instead. Note that fallback mode downloads a new file on save.");
                 document.getElementById('jsonFileInput').click();
                 return;
             }
@@ -1035,7 +1035,7 @@
             pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
             saveStateToStorage();
             applyFilters();
-            document.getElementById('importStatus').textContent = `Progress loaded from ${file.name} (Linked for direct saving)!`;
+            document.getElementById('importStatus').textContent = `Linked to "${file.name}"! Direct saving is active.`;
             document.getElementById('importStatus').style.color = '#155724';
         } catch (err) {
             if (err.name !== 'AbortError') {
@@ -1058,8 +1058,8 @@
                 pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
                 saveStateToStorage();
                 applyFilters();
-                document.getElementById('importStatus').textContent = 'Progress successfully loaded from JSON file!';
-                document.getElementById('importStatus').style.color = '#155724';
+                document.getElementById('importStatus').textContent = `Loaded from "${file.name}" (Fallback mode: saves as a new file).`;
+                document.getElementById('importStatus').style.color = '#856404';
             } catch (err) {
                 console.error("JSON Parsing Error:", err);
                 document.getElementById('importStatus').textContent = 'Error parsing JSON progress file.';
@@ -1085,7 +1085,7 @@
                 const writable = await loadedFileHandle.createWritable();
                 await writable.write(content);
                 await writable.close();
-                document.getElementById('importStatus').textContent = 'Progress successfully saved to the linked file!';
+                document.getElementById('importStatus').textContent = 'Progress successfully overwritten to the linked file!';
                 document.getElementById('importStatus').style.color = '#155724';
                 return;
             }
@@ -1136,7 +1136,7 @@
                 processKMLContent(text);
             })
             .catch(error => {
-                console.warn('Auto-load notice: lids.kml could not be fetched automatically (often due to browser file:// protocol security restrictions). Make sure you are running via a local server (http://localhost).', error);
+                console.warn('Auto-load notice: lids.kml could not be fetched automatically.', error);
                 document.getElementById('statsCounter').innerText = "lids.kml not auto-loaded (run via local dev server).";
                 document.getElementById('importStatus').textContent = "Notice: lids.kml could not be auto-loaded. Please view through a local server (http://localhost).";
                 document.getElementById('importStatus').style.color = "#856404";
