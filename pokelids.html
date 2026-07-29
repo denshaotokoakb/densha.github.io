@@ -1085,22 +1085,12 @@
         const query = searchInput.value.toLowerCase().trim();
         const selectedPref = document.getElementById('prefectureFilter').value;
         
-        const isFiltering = query !== "" || selectedPref !== "";
-
         const filtered = pokelids.filter(lid => {
             const matchesQuery = lid.englishName.toLowerCase().includes(query) || 
                                  lid.name.toLowerCase().includes(query) || 
                                  lid.id.toString().includes(query);
             const matchesPref = !selectedPref || lid.prefecture === selectedPref;
-            const matchesFilters = matchesQuery && matchesPref;
-
-            if (!isFiltering) {
-                // When no filters/search are active, show only collected pokelids
-                return matchesFilters && lid.visited;
-            } else {
-                // When filters or search are active, show all corresponding lids matching the filter
-                return matchesFilters;
-            }
+            return matchesQuery && matchesPref;
         });
         renderLids(filtered);
     }
