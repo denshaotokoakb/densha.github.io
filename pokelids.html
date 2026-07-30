@@ -94,7 +94,38 @@
             margin-bottom: 12px;
             flex-wrap: wrap;
         }
-        .search-bar, .filter-select {
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 250px;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 12px;
+            padding-right: 40px;
+            font-size: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+        .clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            font-size: 22px;
+            color: #999;
+            display: none;
+            line-height: 1;
+            padding: 2px;
+            user-select: none;
+        }
+        .clear-search:hover {
+            color: #333;
+        }
+        .filter-select {
             flex: 1;
             min-width: 250px;
             padding: 12px;
@@ -258,7 +289,10 @@
     </div>
 
     <div class="controls-container">
-        <input type="text" id="searchInput" class="search-bar" placeholder="Search by Pokémon name, translated name, ID, or original text...">
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search by Pokémon name, translated name, ID, or original text...">
+            <span id="clearSearchBtn" class="clear-search" onclick="clearSearchInput()">&times;</span>
+        </div>
         <select id="prefectureFilter" class="filter-select" onchange="applyFilters()">
             <option value="">All Prefectures</option>
         </select>
@@ -1089,8 +1123,24 @@
 
     const gridEl = document.getElementById('lidGrid');
     const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
     const statsCounter = document.getElementById('statsCounter');
     let currentFilteredItems = [];
+
+    function updateClearButtonVisibility() {
+        if (searchInput.value.length > 0) {
+            clearSearchBtn.style.display = 'block';
+        } else {
+            clearSearchBtn.style.display = 'none';
+        }
+    }
+
+    function clearSearchInput() {
+        searchInput.value = '';
+        updateClearButtonVisibility();
+        applyFilters();
+        searchInput.focus();
+    }
 
     function renderLids(items) {
         currentFilteredItems = items;
@@ -1180,7 +1230,10 @@
         }
     }
 
-    searchInput.addEventListener('input', applyFilters);
+    searchInput.addEventListener('input', () => {
+        updateClearButtonVisibility();
+        applyFilters();
+    });
 
     window.addEventListener('DOMContentLoaded', autoLoadKML);
 </script>
