@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Japan Poké Lids Directory - Interactive In-Browser Map</title>
+    <!-- Favicon: Poké Lid Manhole Design -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%23718096%22 stroke=%22%232d3748%22 stroke-width=%226%22/><circle cx=%2250%22 cy=%2250%22 r=%2235%22 fill=%22%23e3350d%22/><path d=%22M 15 50 h 70%22 stroke=%22%232d3748%22 stroke-width=%226%22/><circle cx=%2250%22 cy=%2250%22 r=%2212%22 fill=%22%23fff%22 stroke=%22%232d3748%22 stroke-width=%226%22/></svg>">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Leaflet JS -->
@@ -300,16 +302,12 @@
 
     <!-- Collapsible Automatic Loading Status Box -->
     <details class="import-box" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3; text-align: left; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px;">
-        <summary style="cursor: pointer; font-weight: 600; font-size: 0.9rem; outline: none;">📂 Loading Status & Info (Click to expand/collapse)</summary>
-        <div style="margin-top: 10px; text-align: center; border-top: 1px solid #c7d2fe; padding-top: 10px;">
-            <p style="margin: 0; font-size: 0.9rem;">Automatically loading <strong>lids.kml</strong> from directory...</p>
-            <span id="importStatus" style="display:block; margin-top: 5px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
-        </div>
+        <summary style="cursor: pointer; font-weight: 600; font-size: 0.9rem; outline: none;">Loading Status & Info (Click to expand/collapse)</summary>
     </details>
     
     <!-- PokéLids List & Checklist Area -->
     <details id="lidDetails" class="import-box" style="background: #ffffff; border-color: var(--border-color); color: var(--text-color); text-align: left; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-        <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; color: var(--secondary-color); outline: none;">🗺️ PokéLids List & Checklist (Click to expand/collapse)</summary>
+        <summary style="cursor: pointer; font-weight: 600; font-size: 1rem; color: var(--secondary-color); outline: none;">PokéLids List</summary>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
             <div class="stats">
                 <span id="statsCounter">Loading lids.kml...</span>
@@ -322,14 +320,14 @@
     <!-- Bottom Data Management Section -->
     <div class="import-box" style="margin-top: 35px;">
         <strong>Data Management</strong>
-        <p style="margin: 5px 0 10px 0; font-size: 0.85rem; color: #856404;">Save your progress backup to a JSON file or load an existing JSON file.</p>
         <div class="btn-group">
-            <button class="fs-btn" onclick="exportDataJSON()">💾 Save Progress (.json)</button>
+            <button class="fs-btn" onclick="exportDataJSON()">💾 Save</button>
             <label class="import-btn" style="background-color: #17a2b8; cursor: pointer; margin: 0; color: white; padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;">
-                📂 Load Progress (.json)
+                📂 Load
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
             </label>
         </div>
+        <span id="importStatus" style="display:block; margin-top: 10px; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
     </div>
 </div>
 
@@ -1034,7 +1032,8 @@
             initMap();
             setTimeout(() => { map.invalidateSize(); }, 100);
 
-            document.getElementById('importStatus').textContent = `Success! Loaded and sorted ${pokelids.length} PokéLids from lids.kml.`;
+            document.getElementById('importStatus').textContent = `Loaded ${pokelids.length} PokéLids`;
+            document.getElementById('importStatus').style.color = "#155724";
             applyFilters();
 
         } catch (error) {
