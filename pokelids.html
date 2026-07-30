@@ -54,29 +54,57 @@
         .btn-group {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
-            margin-top: 8px;
+            margin: 0;
         }
-        .import-btn, .fs-btn {
+        /* Top Right Controls Styling (50% smaller buttons & status text below) */
+        .top-right-controls {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .small-btn {
             background-color: var(--secondary-color);
             color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             font-weight: 600;
             display: inline-block;
             border: none;
         }
-        .import-btn:hover, .fs-btn:hover {
+        .small-btn:hover {
             background-color: #2a359b;
         }
-        .fs-btn {
+        .fs-btn-small {
             background-color: #28a745;
         }
-        .fs-btn:hover {
+        .fs-btn-small:hover {
             background-color: #218838;
+        }
+        .load-btn-small {
+            background-color: #17a2b8;
+        }
+        .load-btn-small:hover {
+            background-color: #138496;
+        }
+        .status-text {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #155724;
+            margin: 0;
+            text-align: right;
         }
         #mapContainer {
             display: none;
@@ -292,6 +320,19 @@
     </style>
 </head>
 <body>
+
+<!-- Top Right Save/Load and Status Controls -->
+<div class="top-right-controls">
+    <div class="btn-group">
+        <button class="small-btn fs-btn-small" onclick="exportDataJSON()">Save</button>
+        <label class="small-btn load-btn-small" style="margin: 0; cursor: pointer;">
+            Load
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
+        </label>
+    </div>
+    <span id="importStatus" class="status-text"></span>
+</div>
+
 <div class="container">
     <header>
         <h1>Japan Poké Lids Directory</h1>
@@ -323,19 +364,6 @@
             <div class="grid" id="lidGrid"></div>
         </div>
     </details>
-
-    <!-- Bottom Data Management Section -->
-    <div class="import-box" style="margin-top: 35px;">
-        <strong>Data Management</strong>
-        <span id="importStatus" style="display:block; margin: 8px 0 10px 0; font-size: 0.85rem; font-weight: bold; color: #155724;"></span>
-        <div class="btn-group">
-            <button class="fs-btn" onclick="exportDataJSON()">💾 Save</button>
-            <label class="import-btn" style="background-color: #17a2b8; cursor: pointer; margin: 0; color: white; padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: 600;">
-                📂 Load
-                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDataJSON(event)">
-            </label>
-        </div>
-    </div>
 </div>
 
 <script>
