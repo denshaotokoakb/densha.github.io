@@ -230,22 +230,32 @@
             font-size: 0.85rem;
             flex-wrap: wrap;
         }
-        .map-link {
-            color: var(--secondary-color);
+        .map-link, .directions-link {
             text-decoration: none;
             font-size: 0.8rem;
             font-weight: 600;
-            background: #eef2ff;
             padding: 6px 12px;
             border-radius: 4px;
-            border: 1px solid #c7d2fe;
             display: inline-flex;
             align-items: center;
             gap: 4px;
             cursor: pointer;
         }
+        .map-link {
+            color: var(--secondary-color);
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+        }
         .map-link:hover {
             background: #e0e7ff;
+        }
+        .directions-link {
+            color: #155724;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .directions-link:hover {
+            background: #c3e6cb;
         }
         .card-footer {
             background-color: #f1f3f5;
@@ -936,6 +946,11 @@
         }
     }
 
+    function getDirections(lat, lng) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+        window.open(url, '_blank');
+    }
+
     function processKMLContent(xmlText) {
         try {
             const parser = new DOMParser();
@@ -1161,6 +1176,7 @@
                     </div>
                     <div class="location-container">
                         <button class="map-link" onclick="focusOnMap(${lid.lat}, ${lid.lng})">🗺️ View on Map</button>
+                        <button class="directions-link" onclick="getDirections(${lid.lat}, ${lid.lng})">🚗 Get Directions</button>
                     </div>
                 </div>
                 <div class="card-footer">
