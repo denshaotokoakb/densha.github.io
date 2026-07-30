@@ -921,9 +921,12 @@
                     <img src="${lid.imageUrl}" alt="${lid.englishName}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ccc\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'; this.classList.add('img-fallback');">
                     <b style="font-size: 0.9rem;">#${lid.id} - ${lid.englishName}</b><br>
                     <span style="font-size: 0.80rem; color: #666;">${lid.prefecture}</span><br>
-                    <div style="margin-top: 6px;">
-                        <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="toggleVisited(${lid.id})">
-                        <label for="map-visit-${lid.id}" style="font-size: 0.85rem;">Collected</label>
+                    <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; align-items: center;">
+                        <button class="directions-link" style="padding: 4px 10px; font-size: 0.75rem;" onclick="getDirections(${lid.lat}, ${lid.lng})">Directions</button>
+                        <div>
+                            <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="toggleVisited(${lid.id})">
+                            <label for="map-visit-${lid.id}" style="font-size: 0.85rem;">Collected</label>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1175,8 +1178,8 @@
                         <img src="${lid.imageUrl}" alt="${lid.englishName}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ccc\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'; this.classList.add('img-fallback');">
                     </div>
                     <div class="location-container">
-                        <button class="map-link" onclick="focusOnMap(${lid.lat}, ${lid.lng})">🗺️ View on Map</button>
-                        <button class="directions-link" onclick="getDirections(${lid.lat}, ${lid.lng})">🚗 Get Directions</button>
+                        <button class="map-link" onclick="focusOnMap(${lid.lat}, ${lid.lng})">View on Map</button>
+                        <button class="directions-link" onclick="getDirections(${lid.lat}, ${lid.lng})">Get Directions</button>
                     </div>
                 </div>
                 <div class="card-footer">
