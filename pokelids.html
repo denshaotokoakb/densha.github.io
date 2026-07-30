@@ -1071,7 +1071,7 @@
                 pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
                 saveStateToStorage();
                 applyFilters();
-                document.getElementById('importStatus').textContent = `Loaded progress from "${file.name}"!`;
+                document.getElementById('importStatus').textContent = "Loaded progress!";
                 document.getElementById('importStatus').style.color = "#155724";
                 alert("Poké Lid progress successfully loaded!");
             } catch (err) {
