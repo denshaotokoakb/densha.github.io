@@ -1014,48 +1014,8 @@
                     officialId = parseInt(descMatch[1], 10);
                 }
 
-                let imageUrl = '';
-                const gxMediaElements = pm.getElementsByTagNameNS("*", "media");
-                if (gxMediaElements.length > 0) {
-                    imageUrl = gxMediaElements[0].textContent?.trim();
-                }
-                if (!imageUrl) {
-                    const directGx = pm.getElementsByTagName("gx:media")[0];
-                    if (directGx) imageUrl = directGx.textContent?.trim();
-                }
-
-                if (!imageUrl) {
-                    const extendedDatas = pm.getElementsByTagName("ExtendedData");
-                    if (extendedDatas.length > 0) {
-                        const nodes = extendedDatas[0].querySelectorAll("Data, SimpleData");
-                        for (let d = 0; d < nodes.length; d++) {
-                            const nameAttr = (nodes[d].getAttribute("name") || "").toLowerCase();
-                            if (nameAttr.includes("media") || nameAttr.includes("gx") || nameAttr.includes("img") || nameAttr.includes("thumbnail")) {
-                                const valNode = nodes[d].getElementsByTagName("value")[0];
-                                const valText = (valNode ? valNode.textContent : nodes[d].textContent)?.trim();
-                                if (valText && valText.startsWith("http")) {
-                                    imageUrl = valText;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!imageUrl && description) {
-                    let decodedDesc = description;
-                    if (description.includes('&lt;') || description.includes('&amp;')) {
-                        const txtArea = document.createElement('textarea');
-                        txtArea.innerHTML = description;
-                        decodedDesc = txtArea.value;
-                    }
-                    const imgMatch = decodedDesc.match(/<img[^>]+src\s*=\s*["']([^"']+)["']/i);
-                    if (imgMatch && imgMatch[1]) {
-                        imageUrl = imgMatch[1];
-                    }
-                }
-
-                imageUrl = decodeHtmlEntities(imageUrl);
+                // Reference local images from the "lidsimg" folder mapped by entry number/ID
+                const imageUrl = `lidsimg/${officialId}.png`;
 
                 pokelids.push({
                     id: officialId,
@@ -1064,7 +1024,7 @@
                     prefecture: locationInfo.prefecture,
                     lat: lat,
                     lng: lng,
-                    imageUrl: imageUrl || `https://via.placeholder.com/300x200?text=${encodeURIComponent(locationInfo.englishName)}`,
+                    imageUrl: imageUrl,
                     visited: !!savedState[officialId]
                 });
             }
