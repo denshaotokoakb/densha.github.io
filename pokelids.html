@@ -1052,7 +1052,7 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 4px;">
                             <div>
                                 <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="updateVisited(${lid.id})">
-                                <label for="map-visit-${lid.id}" id="map-label-visit-${lid.id}" style="font-size: 0.8rem;">${(lid.visited && lid.date) ? 'Collected on ' + lid.date : 'Collected'}</label>
+                                <label for="map-visit-${lid.id}" id="map-label-visit-${lid.id}" style="font-size: 0.8rem;">Collected</label>
                             </div>
                             <input type="date" id="map-date-${lid.id}" value="${lid.date || ''}" onchange="syncDateFromMap(${lid.id})" style="font-size: 0.7rem; padding: 2px; border: 1px solid var(--border-color); border-radius: 4px;">
                         </div>
@@ -1301,7 +1301,7 @@
             const card = document.createElement('div');
             card.className = `card ${lid.visited ? 'collected-card' : ''}`;
             card.id = `card-${lid.id}`;
-            const labelText = (lid.visited && lid.date) ? `Collected on ${lid.date}` : `Collected`;
+            const labelText = `Collected`;
             card.innerHTML = `
                 <div class="card-content">
                     <h3>${lid.englishName}</h3>
@@ -1447,7 +1447,7 @@
         const label = document.getElementById(`label-visit-${id}`);
         const mapLabel = document.getElementById(`map-label-visit-${id}`);
         
-        const labelText = (lid.visited && lid.date) ? `Collected on ${lid.date}` : `Collected`;
+        const labelText = `Collected`;
         if (label) label.textContent = labelText;
         if (mapLabel) mapLabel.textContent = labelText;
     }
