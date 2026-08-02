@@ -1056,7 +1056,7 @@
                             </div>
                             <input type="date" id="map-date-${lid.id}" value="${lid.date || ''}" onchange="syncDateFromMap(${lid.id})" style="font-size: 0.7rem; padding: 2px; border: 1px solid var(--border-color); border-radius: 4px;">
                         </div>
-                        <input type="text" id="map-note-${lid.id}" value="${lid.note || ''}" placeholder="Add a note..." onchange="syncNoteFromMap(${lid.id})" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
+                        <input type="text" id="map-note-${lid.id}" value="${lid.note || ''}" maxlength="23" placeholder="Add a note..." onchange="syncNoteFromMap(${lid.id})" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
                     </div>
                 </div>
             `;
@@ -1322,7 +1322,7 @@
                         </div>
                         <input type="date" id="date-${lid.id}" value="${lid.date || ''}" onchange="updateDate(${lid.id})" style="font-size: 0.75rem; padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px;">
                     </div>
-                    <input type="text" id="note-${lid.id}" value="${lid.note || ''}" placeholder="Add a note..." onchange="updateNote(${lid.id})" style="width: 100%; font-size: 0.8rem; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="note-${lid.id}" value="${lid.note || ''}" maxlength="23" placeholder="Add a note..." onchange="updateNote(${lid.id})" style="width: 100%; font-size: 0.8rem; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
                 </div>
             `;
             fragment.appendChild(card);
