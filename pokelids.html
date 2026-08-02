@@ -291,7 +291,7 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .card.collected-card .card-footer {
             background-color: #ffe8e6;
@@ -300,10 +300,11 @@
         .checkbox-container {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: 8px;
             font-size: 0.85rem;
             font-weight: 500;
+            width: 100%;
         }
         button.reset-btn {
             background: #6c757d;
@@ -945,16 +946,20 @@
             const marker = L.marker([lid.lat, lid.lng]).addTo(map);
 
             const contentString = `
-                <div style="text-align: center; min-width: 160px; max-width: 200px;">
+                <div style="text-align: center; min-width: 170px; max-width: 210px;">
                     <img src="${lid.imageUrl}" alt="${lid.englishName}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ccc\' stroke-width=\'2\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg>'; this.classList.add('img-fallback');">
                     <b style="font-size: 0.9rem;">#${lid.id} - ${lid.englishName}</b><br>
                     <span style="font-size: 0.80rem; color: #666;">${lid.prefecture}</span><br>
                     <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; align-items: center;">
                         <button class="directions-link" style="padding: 4px 10px; font-size: 0.75rem;" onclick="getDirections(${lid.lat}, ${lid.lng})">Directions</button>
-                        <div>
-                            <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="toggleVisited(${lid.id})">
-                            <label for="map-visit-${lid.id}" style="font-size: 0.85rem;">Collected</label>
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 4px;">
+                            <div>
+                                <input type="checkbox" id="map-visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="updateVisited(${lid.id})">
+                                <label for="map-visit-${lid.id}" id="map-label-visit-${lid.id}" style="font-size: 0.8rem;">${lid.visited && lid.date ? 'Collected on ' + lid.date : 'Collected'}</label>
+                            </div>
+                            <input type="date" id="map-date-${lid.id}" value="${lid.date || ''}" onchange="syncDateFromMap(${lid.id})" style="font-size: 0.7rem; padding: 2px; border: 1px solid var(--border-color); border-radius: 4px;">
                         </div>
+                        <input type="text" id="map-note-${lid.id}" value="${lid.note || ''}" placeholder="Add a note..." onchange="syncNoteFromMap(${lid.id})" style="width: 100%; font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
                     </div>
                 </div>
             `;
@@ -1014,8 +1019,22 @@
                     officialId = parseInt(descMatch[1], 10);
                 }
 
-                // Reference local images from the "lidsimg" folder mapped by entry number/ID
                 const imageUrl = `lidsimg/${officialId}.png`;
+
+                const savedItem = savedState[officialId];
+                let isVisited = false;
+                let savedDate = '';
+                let savedNote = '';
+
+                if (savedItem) {
+                    if (typeof savedItem === 'boolean') {
+                        isVisited = savedItem;
+                    } else {
+                        isVisited = !!savedItem.visited;
+                        savedDate = savedItem.date || '';
+                        savedNote = savedItem.note || '';
+                    }
+                }
 
                 pokelids.push({
                     id: officialId,
@@ -1025,7 +1044,9 @@
                     lat: lat,
                     lng: lng,
                     imageUrl: imageUrl,
-                    visited: !!savedState[officialId]
+                    visited: isVisited,
+                    date: savedDate,
+                    note: savedNote
                 });
             }
 
@@ -1048,9 +1069,17 @@
 
     // Export progress data to a downloadable JSON file
     function exportDataJSON() {
-        const visitedState = {};
-        pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
-        const dataStr = JSON.stringify(visitedState, null, 2);
+        const stateToSave = {};
+        pokelids.forEach(l => {
+            if (l.visited || l.date || l.note) {
+                stateToSave[l.id] = {
+                    visited: l.visited,
+                    date: l.date,
+                    note: l.note
+                };
+            }
+        });
+        const dataStr = JSON.stringify(stateToSave, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
@@ -1074,9 +1103,26 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const visitedState = JSON.parse(e.target.result);
-                savedState = visitedState;
-                pokelids.forEach(l => { l.visited = !!visitedState[l.id]; });
+                const loadedState = JSON.parse(e.target.result);
+                savedState = loadedState;
+                pokelids.forEach(l => {
+                    const item = loadedState[l.id];
+                    if (item) {
+                        if (typeof item === 'boolean') {
+                            l.visited = item;
+                            l.date = '';
+                            l.note = '';
+                        } else {
+                            l.visited = !!item.visited;
+                            l.date = item.date || '';
+                            l.note = item.note || '';
+                        }
+                    } else {
+                        l.visited = false;
+                        l.date = '';
+                        l.note = '';
+                    }
+                });
                 saveStateToStorage();
                 applyFilters();
                 document.getElementById('importStatus').textContent = "Loaded progress!";
@@ -1172,9 +1218,13 @@
                 </div>
                 <div class="card-footer">
                     <div class="checkbox-container">
-                        <input type="checkbox" id="visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="toggleVisited(${lid.id})">
-                        <label for="visit-${lid.id}">Collected / Visited</label>
+                        <div>
+                            <input type="checkbox" id="visit-${lid.id}" ${lid.visited ? 'checked' : ''} onchange="updateVisited(${lid.id})">
+                            <label for="visit-${lid.id}" id="label-visit-${lid.id}">${lid.visited && lid.date ? 'Collected on ' + lid.date : 'Collected'}</label>
+                        </div>
+                        <input type="date" id="date-${lid.id}" value="${lid.date || ''}" onchange="updateDate(${lid.id})" style="font-size: 0.75rem; padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px;">
                     </div>
+                    <input type="text" id="note-${lid.id}" value="${lid.note || ''}" placeholder="Add a note..." onchange="updateNote(${lid.id})" style="width: 100%; font-size: 0.8rem; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box;">
                 </div>
             `;
             fragment.appendChild(card);
@@ -1210,24 +1260,121 @@
         renderLids(filtered);
     }
 
-    function toggleVisited(id) {
+    function updateVisited(id) {
         const lid = pokelids.find(l => l.id === id);
         if (lid) {
-            lid.visited = !lid.visited;
+            const cardCb = document.getElementById(`visit-${id}`);
+            const mapCb = document.getElementById(`map-visit-${id}`);
+            
+            if (cardCb && document.activeElement === cardCb) {
+                lid.visited = cardCb.checked;
+            } else if (mapCb && document.activeElement === mapCb) {
+                lid.visited = mapCb.checked;
+            } else {
+                lid.visited = !lid.visited;
+            }
+
+            if (cardCb) cardCb.checked = lid.visited;
+            if (mapCb) mapCb.checked = lid.visited;
+
+            updateCardDisplay(id);
             saveStateToStorage();
-            applyFilters();
+            updateStats(currentFilteredItems.length);
         }
     }
 
+    function updateDate(id) {
+        const lid = pokelids.find(l => l.id === id);
+        if (lid) {
+            const dateInput = document.getElementById(`date-${id}`);
+            const mapDateInput = document.getElementById(`map-date-${id}`);
+            if (dateInput) lid.date = dateInput.value;
+            if (mapDateInput) mapDateInput.value = lid.date;
+
+            updateCardDisplay(id);
+            saveStateToStorage();
+        }
+    }
+
+    function updateNote(id) {
+        const lid = pokelids.find(l => l.id === id);
+        if (lid) {
+            const noteInput = document.getElementById(`note-${id}`);
+            const mapNoteInput = document.getElementById(`map-note-${id}`);
+            if (noteInput) lid.note = noteInput.value;
+            if (mapNoteInput) mapNoteInput.value = lid.note;
+
+            saveStateToStorage();
+        }
+    }
+
+    function syncDateFromMap(id) {
+        const lid = pokelids.find(l => l.id === id);
+        if (lid) {
+            const mapDateInput = document.getElementById(`map-date-${id}`);
+            const cardDateInput = document.getElementById(`date-${id}`);
+            if (mapDateInput) lid.date = mapDateInput.value;
+            if (cardDateInput) cardDateInput.value = lid.date;
+
+            updateCardDisplay(id);
+            saveStateToStorage();
+        }
+    }
+
+    function syncNoteFromMap(id) {
+        const lid = pokelids.find(l => l.id === id);
+        if (lid) {
+            const mapNoteInput = document.getElementById(`map-note-${id}`);
+            const cardNoteInput = document.getElementById(`note-${id}`);
+            if (mapNoteInput) lid.note = mapNoteInput.value;
+            if (cardNoteInput) cardNoteInput.value = lid.note;
+
+            saveStateToStorage();
+        }
+    }
+
+    function updateCardDisplay(id) {
+        const lid = pokelids.find(l => l.id === id);
+        if (!lid) return;
+
+        const card = document.getElementById(`card-${id}`);
+        if (card) {
+            if (lid.visited) {
+                card.classList.add('collected-card');
+            } else {
+                card.classList.remove('collected-card');
+            }
+        }
+
+        const label = document.getElementById(`label-visit-${id}`);
+        const mapLabel = document.getElementById(`map-label-visit-${id}`);
+        
+        const labelText = (lid.visited && lid.date) ? `Collected on ${lid.date}` : `Collected`;
+        if (label) label.textContent = labelText;
+        if (mapLabel) mapLabel.textContent = labelText;
+    }
+
     function saveStateToStorage() {
-        const visitedState = {};
-        pokelids.forEach(l => { if (l.visited) visitedState[l.id] = true; });
-        localStorage.setItem('pokelids_sorted_kml_state', JSON.stringify(visitedState));
+        const stateToSave = {};
+        pokelids.forEach(l => {
+            if (l.visited || l.date || l.note) {
+                stateToSave[l.id] = {
+                    visited: l.visited,
+                    date: l.date,
+                    note: l.note
+                };
+            }
+        });
+        localStorage.setItem('pokelids_sorted_kml_state', JSON.stringify(stateToSave));
     }
 
     function resetProgress() {
         if (confirm('Are you sure you want to reset your collected checklist?')) {
-            pokelids.forEach(l => l.visited = false);
+            pokelids.forEach(l => {
+                l.visited = false;
+                l.date = '';
+                l.note = '';
+            });
             localStorage.removeItem('pokelids_sorted_kml_state');
             applyFilters();
         }
