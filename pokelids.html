@@ -208,6 +208,33 @@
         body.dark-mode .filter-select {
             background-color: #2a2a2a;
         }
+        .toggle-filter-btn {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: var(--text-color);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        body.dark-mode .toggle-filter-btn {
+            background-color: #2a2a2a;
+        }
+        .toggle-filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        body.dark-mode .toggle-filter-btn.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
         .stats {
             margin: 0 0 15px 0;
             font-weight: bold;
@@ -434,6 +461,7 @@
             <input type="text" id="searchInput" class="search-bar" placeholder="Search by ID#, Prefecture, or Town name...">
             <span id="clearSearchBtn" class="clear-search" onclick="clearSearchInput()">&times;</span>
         </div>
+        <button id="collectedToggleBtn" class="toggle-filter-btn" onclick="toggleCollectedFilter()">Collected Only: OFF</button>
         <select id="prefectureFilter" class="filter-select" onchange="applyFilters()">
             <option value="">All Prefectures</option>
         </select>
@@ -996,6 +1024,7 @@
     let savedState = JSON.parse(localStorage.getItem('pokelids_sorted_kml_state') || '{}');
     let map = null;
     let markers = [];
+    let showCollectedOnly = false;
 
     // Dark Mode Toggle Logic
     function toggleDarkMode() {
@@ -1287,6 +1316,19 @@
         searchInput.focus();
     }
 
+    function toggleCollectedFilter() {
+        showCollectedOnly = !showCollectedOnly;
+        const btn = document.getElementById('collectedToggleBtn');
+        if (showCollectedOnly) {
+            btn.textContent = "Collected Only: ON";
+            btn.classList.add('active');
+        } else {
+            btn.textContent = "Collected Only: OFF";
+            btn.classList.remove('active');
+        }
+        applyFilters();
+    }
+
     function renderLids(items) {
         currentFilteredItems = items;
         gridEl.innerHTML = '';
@@ -1344,7 +1386,7 @@
         const selectedPref = document.getElementById('prefectureFilter').value;
         const lidDetails = document.getElementById('lidDetails');
         
-        if (query !== "" || selectedPref !== "") {
+        if (query !== "" || selectedPref !== "" || showCollectedOnly) {
             lidDetails.open = true;
         }
         
@@ -1353,7 +1395,8 @@
                                  lid.name.toLowerCase().includes(query) || 
                                  lid.id.toString().includes(query);
             const matchesPref = !selectedPref || lid.prefecture === selectedPref;
-            return matchesQuery && matchesPref;
+            const matchesCollected = !showCollectedOnly || lid.visited;
+            return matchesQuery && matchesPref && matchesCollected;
         });
         renderLids(filtered);
     }
@@ -1378,6 +1421,10 @@
             updateCardDisplay(id);
             saveStateToStorage();
             updateStats(currentFilteredItems.length);
+            
+            if (showCollectedOnly) {
+                applyFilters();
+            }
         }
     }
 
